@@ -749,6 +749,6 @@ $("#btnGoogle").onclick=()=>CFG.GOOGLE_CLIENT_ID?entrar(DriveStore):toast("Confi
 $("#btnDemo").onclick=()=>entrar(DemoStore);
 $("#sair").onclick=()=>{ if(DriveStore.token&&window.google) google.accounts.oauth2.revoke(DriveStore.token); location.reload(); };
 </script>
-<script src="documentos.js"></script>
+<script src="documentos.js?v=4"></script>
 </body>
 </html>
