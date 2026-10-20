@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prontuário Médico</title>
+<style>
+:root{--bg:#f4f6f8;--card:#fff;--tx:#1d2733;--mut:#667385;--pri:#0f6f8f;--pri2:#0b5870;--bd:#d9e0e7;--ok:#1f8a4c;--err:#c0392b}
+@media (prefers-color-scheme:dark){:root{--bg:#12171c;--card:#1b232b;--tx:#e6ebf0;--mut:#93a1b0;--pri:#3aa7c9;--pri2:#2b8fb0;--bd:#2e3a45}}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.45 system-ui,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--tx)}
+button,input,select,textarea{font:inherit;color:inherit}
+.btn{background:var(--pri);color:#fff;border:0;border-radius:8px;padding:8px 14px;cursor:pointer}
+.btn:hover{background:var(--pri2)}
+.btn.sec{background:transparent;color:var(--pri);border:1px solid var(--pri)}
+.btn.danger{background:transparent;color:var(--err);border:1px solid var(--err)}
+.btn.sm{padding:4px 10px;font-size:13px}
+input,select,textarea{width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:8px;background:var(--card)}
+textarea{min-height:64px;resize:vertical;text-transform:uppercase}
+input.up{text-transform:uppercase}
+label{display:block;font-size:12px;font-weight:600;color:var(--mut);margin:10px 0 3px;text-transform:uppercase;letter-spacing:.03em}
+#login{max-width:420px;margin:12vh auto;background:var(--card);padding:32px;border-radius:14px;border:1px solid var(--bd);text-align:center}
+#login h1{margin:0 0 6px}
+#app{display:none;min-height:100vh}
+aside{position:fixed;inset:0 auto 0 0;width:210px;background:var(--card);border-right:1px solid var(--bd);padding:18px 12px;display:flex;flex-direction:column;gap:4px}
+aside h2{font-size:16px;margin:0 8px 14px;color:var(--pri)}
+aside a{padding:9px 12px;border-radius:8px;cursor:pointer;color:var(--tx)}
+aside a.on,aside a:hover{background:var(--bg);color:var(--pri);font-weight:600}
+#who{margin-top:auto;font-size:12px;color:var(--mut);padding:8px}
+main{margin-left:210px;padding:24px;max-width:1100px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:18px;margin-bottom:16px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0 14px}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--bd)}
+th{font-size:12px;color:var(--mut);text-transform:uppercase}
+tr.click:hover{background:var(--bg);cursor:pointer}
+.tag{display:inline-block;background:var(--bg);border:1px solid var(--bd);border-radius:20px;padding:1px 10px;font-size:12px;color:var(--mut)}
+.mut{color:var(--mut)}
+.rec{white-space:pre-wrap;font-family:Consolas,monospace;font-size:13.5px;text-transform:uppercase}
+.consulta{border-left:4px solid var(--pri);padding-left:14px;margin:16px 0}
+.consulta h4{margin:0 0 6px}
+.hint{font-size:12px;color:var(--mut);margin-top:8px}
+#toast{position:fixed;bottom:20px;right:20px;background:var(--tx);color:var(--bg);padding:10px 16px;border-radius:8px;display:none;z-index:9}
+#print{display:none}
+@media print{
+  body{background:#fff;color:#000}
+  #app,#login,#toast{display:none!important}
+  #print{display:block;font:12pt/1.4 "Courier New",monospace;white-space:pre-wrap;text-transform:uppercase}
+  #print h3{font:bold 12pt "Courier New",monospace;margin:14pt 0 4pt}
+}
+@media (max-width:760px){aside{position:static;width:auto;flex-direction:row;flex-wrap:wrap}main{margin-left:0}}
+</style>
+</head>
+<body>
+<div id="login">
+  <h1>Prontuário</h1>
+  <p class="mut">Seus dados ficam no <b>seu</b> Google Drive.</p>
+  <p><button class="btn" id="btnGoogle">Entrar com Google</button></p>
+  <p id="demoBox" style="display:none"><button class="btn sec" id="btnDemo">Modo demonstração</button><br>
+  <span class="hint">Dados salvos só neste navegador. Para usar o Drive, configure o Client ID (LEIA-ME).</span></p>
+  <p class="hint">Apoio ao atendimento. Imprima e assine para validade legal do prontuário em papel.</p>
+  <p class="hint"><a href="privacidade.html">Política de Privacidade</a> · <a href="termos.html">Termos de uso</a></p>
+</div>
+
+<div id="app">
+  <aside>
+    <h2>Prontuário</h2>
+    <a data-v="pacientes" class="on">Pacientes</a>
+    <a data-v="agenda">Agenda</a>
+    <div id="who"></div>
+    <a id="sair">Sair</a>
+  </aside>
+  <main id="main"></main>
+</div>
+<div id="print"></div>
+<div id="toast"></div>
+
+<script src="config.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+"use strict";
+const CFG = window.PRONTUARIO_CONFIG;
+const $ = (s, r=document) => r.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+const hoje = () => new Date().toISOString().slice(0,10);
+const fmtData = d => d ? d.split("-").reverse().join("/") : "";
+const toast = (m) => { const t=$("#toast"); t.textContent=m; t.style.display="block"; clearTimeout(toast.t); toast.t=setTimeout(()=>t.style.display="none",2800); };
+
+/* ================= MODELOS DE CONSULTA ================= */
+// h: título de seção (HPP, HS, HGO). c: copiar da consulta anterior. a: textarea.
+const HPP = [
+  {k:"COMORBIDADES", h:"HPP", c:1}, {k:"MEDICAMENTOS", h:"HPP", c:1},
+  {k:"ALERGIAS", h:"HPP", c:1, d:"NEGA"}, {k:"CIRURGIAS PRÉVIAS", h:"HPP", c:1}
+];
+const TIPOS = {
+  cir_pre: {nome:"Cirurgia – Pré-operatório", grupo:"Cirurgia", campos:[
+    {k:"INDICAÇÃO CIRÚRGICA", a:1}, {k:"PROCEDIMENTO PROPOSTO", a:1},
+    ...HPP,
+    {k:"EXAMES PRÉ-OPERATÓRIOS", a:1}, {k:"RISCO ANESTÉSICO", c:0},
+    {k:"EF", a:1, d:"BEG, HIDRATADA, CORADA."},
+    {k:"TERMO DE CONSENTIMENTO"}, {k:"DATA PREVISTA DA CIRURGIA"},
+    {k:"HD", a:1}, {k:"CD", a:1}]},
+  cir_pos: {nome:"Cirurgia – Pós-operatório", grupo:"Cirurgia", campos:[
+    {k:"DATA DA CIRURGIA"}, {k:"PROCEDIMENTO REALIZADO", a:1}, {k:"DPO"},
+    {k:"QUEIXAS", a:1}, {k:"MEDICAMENTOS", c:1},
+    {k:"EF", a:1, d:"BEG, HIDRATADA, CORADA."},
+    {k:"ANATOMOPATOLÓGICO", a:1}, {k:"HD", a:1}, {k:"CD", a:1}]},
+  gin_primeira: {nome:"Ginecologia – 1ª consulta", grupo:"Ginecologia", campos:[
+    {k:"QP"}, {k:"HMA", a:1}, ...HPP,
+    {k:"ATIVIDADE FÍSICA", h:"HS", c:1}, {k:"VÍCIOS", h:"HS", c:1},
+    {k:"HF", a:1, c:1},
+    {k:"G/P/A", h:"HGO", c:1}, {k:"CICLOS", h:"HGO", c:1}, {k:"MENARCA", h:"HGO", c:1},
+    {k:"SEXARCA", h:"HGO", c:1}, {k:"MENOPAUSA", h:"HGO", c:1}, {k:"Nº DE PARCERIAS", h:"HGO", c:1},
+    {k:"EF", a:1, d:"BEG, HIDRATADA, CORADA."}, {k:"EXAMES", a:1},
+    {k:"HD", a:1}, {k:"CD", a:1}]},
+  gin_retorno: {nome:"Ginecologia – Retorno", grupo:"Ginecologia", campos:[
+    {k:"QUEIXAS", a:1}, {k:"MEDICAMENTOS", c:1}, {k:"EXAMES", a:1, c:1},
+    {k:"EF", a:1, d:"BEG, HIDRATADA, CORADA."}, {k:"HD", a:1}, {k:"CD", a:1}]},
+  prenatal: {nome:"Pré-natal (em breve)", grupo:"Pré-natal", off:1, campos:[]}
+};
+const SNIPPETS = {
+  ".ef":"BEG, HIDRATADA, CORADA.", ".mamas":"MAMAS SEM ALTERAÇÕES.",
+  ".abd":"ABDOME NORMOTENSO, INDOLOR À PALPAÇÃO.", ".vulva":"VULVA EUTRÓFICA, SEM LESÕES APARENTES.",
+  ".tv":"TV: ÚTERO AVF, COLO COM CONSISTÊNCIA GINECOLÓGICA, ANEXOS LIVRES.",
+  ".ee":"EE: VAGINA TRÓFICA, COLO PLANO, SEM ALTERAÇÕES VISÍVEIS.", ".cto":"COLETO CTO.",
+  ".oriento":"ORIENTO", ".neg":"NEGA", ".retex":"RETORNO COM EXAMES",
+  ".ferida":"FERIDA OPERATÓRIA LIMPA, SECA, SEM SINAIS FLOGÍSTICOS.", ".alta":"ALTA AMBULATORIAL.",
+  ".asa2":"ASA II"
+};
+
+/* ================= RENDER DO PRONTUÁRIO (texto) ================= */
+function cabecalho(p){
+  const l = [["NOME",p.nome],["CARTÃO SUS",p.sus],["IDADE",p.idade]];
+  let s = l.filter(x=>x[1]).map(x=>`${x[0]}: ${x[1]}`).join("\n");
+  const pr = [p.procedencia&&`PROCEDÊNCIA: ${p.procedencia}`, p.residencia&&`RESIDÊNCIA: ${p.residencia}`].filter(Boolean).join("   ");
+  if(pr) s += "\n"+pr;
+  if(p.parceria) s += `\nPARCERIA: ${p.parceria}`;
+  if(p.encaminhamento) s += `\n\nMOTIVO DO ENCAMINHAMENTO: ${p.encaminhamento}`;
+  return s.toUpperCase();
+}
+function textoConsulta(c){
+  const t = TIPOS[c.tipo]; if(!t) return "";
+  let out = "", sec = null;
+  for(const f of t.campos){
+    const v = (c.v[f.k]||"").trim(); if(!v) continue;
+    if(f.h){ if(sec!==f.h){ out += (out?"\n":"")+`${f.h}:\n`; sec=f.h; } out += `${f.k}: ${v}\n`; }
+    else { sec=null; out += `${f.k==="EF"||f.k==="HD"||f.k==="CD"||f.k==="HF"||f.k==="QP"||f.k==="HMA"?"\n":""}${f.k}: ${v}\n`; }
+  }
+  return out.replace(/^\n/,"").toUpperCase();
+}
+function tituloConsulta(p,c,i){ return `${i+1}ª CONSULTA ${fmtData(c.data)} — ${TIPOS[c.tipo]?.nome||c.tipo}`.toUpperCase(); }
+const ordenadas = p => [...(p.consultas||[])].sort((a,b)=>a.data.localeCompare(b.data)||a.criada?.localeCompare(b.criada||"")||0);
+function prontuarioHTML(p){
+  let h = `<h3>PRONTUÁRIO</h3><div class="rec">${esc(cabecalho(p))}</div>`;
+  ordenadas(p).forEach((c,i)=>{ h += `<h3>${esc(tituloConsulta(p,c,i))}</h3><div class="rec">${esc(textoConsulta(c))}</div>`; });
+  return h;
+}
+function prontuarioDocHTML(p){ // versão para o Google Docs
+  let h = `<html><body style="font-family:Courier New;font-size:11pt"><p><b>PRONTUÁRIO</b></p><p>${esc(cabecalho(p)).replace(/\n/g,"<br>")}</p>`;
+  ordenadas(p).forEach((c,i)=>{ h += `<p><b>${esc(tituloConsulta(p,c,i))}</b></p><p>${esc(textoConsulta(c)).replace(/\n/g,"<br>")}</p>`; });
+  return h+"</body></html>";
+}
+
+/* ================= ARMAZENAMENTO ================= */
+let store;  // {init, loadIndex, saveIndex, loadPatient, savePatient, deletePatient}
+let idx = {pacientes:[], agenda:[]};   // índice em memória
+const cachePac = {};
+
+const DemoStore = {
+  nome:"demonstração",
+  async init(){ },
+  async loadIndex(){ return JSON.parse(localStorage.getItem("demo_idx")||'{"pacientes":[],"agenda":[]}'); },
+  async saveIndex(i){ localStorage.setItem("demo_idx", JSON.stringify(i)); },
+  async loadPatient(id){ return JSON.parse(localStorage.getItem("demo_p_"+id)); },
+  async savePatient(p){ localStorage.setItem("demo_p_"+p.id, JSON.stringify(p)); },
+  async deletePatient(p){ localStorage.removeItem("demo_p_"+p.id); }
+};
+
+const DriveStore = {
+  nome:"Google Drive", token:null, exp:0, rootId:null, idxFile:null, tc:null,
+  async init(){
+    await new Promise((res,rej)=>{
+      const t=setInterval(()=>{ if(window.google?.accounts?.oauth2){clearInterval(t);res();} },100);
+      setTimeout(()=>{clearInterval(t);rej(new Error("Biblioteca Google não carregou"));},10000);
+    });
+    this.tc = google.accounts.oauth2.initTokenClient({
+      client_id: CFG.GOOGLE_CLIENT_ID,
+      scope: "https://www.googleapis.com/auth/drive.file openid email profile",
+      callback: ()=>{}
+    });
+    await this.auth(true);
+    const u = await (await fetch("https://www.googleapis.com/oauth2/v3/userinfo",{headers:{Authorization:"Bearer "+this.token}})).json();
+    this.user = u;
+    this.rootId = await this.pasta(CFG.PASTA_RAIZ, null);
+  },
+  auth(consent){
+    return new Promise((res,rej)=>{
+      this.tc.callback = r => { if(r.error) rej(new Error(r.error)); else { this.token=r.access_token; this.exp=Date.now()+(r.expires_in-60)*1000; res(); } };
+      this.tc.error_callback = e => rej(new Error(e.type||"auth"));
+      this.tc.requestAccessToken({prompt: consent?"select_account":""});
+    });
+  },
+  async api(url, opt={}){
+    if(Date.now()>this.exp) await this.auth(false);
+    const r = await fetch(url, {...opt, headers:{Authorization:"Bearer "+this.token, ...(opt.headers||{})}});
+    if(!r.ok) throw new Error("Drive "+r.status+": "+(await r.text()).slice(0,200));
+    return r;
+  },
+  async pasta(nome, pai){
+    const q = `name='${nome.replace(/'/g,"\\'")}' and mimeType='application/vnd.google-apps.folder' and trashed=false` + (pai?` and '${pai}' in parents`:"");
+    const l = await (await this.api("https://www.googleapis.com/drive/v3/files?q="+encodeURIComponent(q)+"&fields=files(id)")).json();
+    if(l.files.length) return l.files[0].id;
+    const c = await (await this.api("https://www.googleapis.com/drive/v3/files?fields=id",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({name:nome,mimeType:"application/vnd.google-apps.folder",parents:pai?[pai]:undefined})})).json();
+    return c.id;
+  },
+  async upsert(nome, pai, fileId, tipoMeta, conteudo, tipoMedia){
+    const meta = fileId ? {name:nome} : {name:nome, parents:[pai], ...(tipoMeta?{mimeType:tipoMeta}:{})};
+    const b = "x"+uid();
+    const body = `--${b}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n--${b}\r\nContent-Type: ${tipoMedia}; charset=UTF-8\r\n\r\n${conteudo}\r\n--${b}--`;
+    const url = fileId ? `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart&fields=id`
+                       : `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id`;
+    const r = await (await this.api(url,{method:fileId?"PATCH":"POST",headers:{"Content-Type":"multipart/related; boundary="+b},body})).json();
+    return r.id;
+  },
+  async loadIndex(){
+    const q = `name='indice.json' and '${this.rootId}' in parents and trashed=false`;
+    const l = await (await this.api("https://www.googleapis.com/drive/v3/files?q="+encodeURIComponent(q)+"&fields=files(id)")).json();
+    if(!l.files.length) return {pacientes:[],agenda:[]};
+    this.idxFile = l.files[0].id;
+    return await (await this.api(`https://www.googleapis.com/drive/v3/files/${this.idxFile}?alt=media`)).json();
+  },
+  async saveIndex(i){ this.idxFile = await this.upsert("indice.json", this.rootId, this.idxFile, null, JSON.stringify(i), "application/json"); },
+  async loadPatient(id){
+    const e = idx.pacientes.find(x=>x.id===id);
+    return await (await this.api(`https://www.googleapis.com/drive/v3/files/${e.jsonId}?alt=media`)).json();
+  },
+  async savePatient(p){
+    const e = idx.pacientes.find(x=>x.id===p.id) || {};
+    const folderId = e.folderId || await this.pasta(`${p.nome} – ${p.id}`, this.rootId);
+    const jsonId = await this.upsert("paciente.json", folderId, e.jsonId, null, JSON.stringify(p), "application/json");
+    const docId = await this.upsert(`Prontuário – ${p.nome}`, folderId, e.docId, "application/vnd.google-apps.document", prontuarioDocHTML(p), "text/html");
+    Object.assign(p, {_drive:{folderId,jsonId,docId}});
+  },
+  async deletePatient(p){
+    const e = idx.pacientes.find(x=>x.id===p.id);
+    if(e?.folderId) await this.api(`https://www.googleapis.com/drive/v3/files/${e.folderId}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({trashed:true})});
+  }
+};
+
+function resumo(p){ // entrada do índice
+  const cs = ordenadas(p), u = cs[cs.length-1];
+  return {id:p.id, nome:p.nome, sus:p.sus, idade:p.idade, ultima:u?.data||"", n:cs.length, ...(p._drive||{})};
+}
+async function gravarPaciente(p){
+  await store.savePatient(p);
+  const r = resumo(p), i = idx.pacientes.findIndex(x=>x.id===p.id);
+  if(i<0) idx.pacientes.push(r); else idx.pacientes[i]=r;
+  cachePac[p.id]=p;
+  await store.saveIndex(idx);
+}
+async function getPaciente(id){ return cachePac[id] ||= await store.loadPatient(id); }
+
+/* ================= TELAS ================= */
+let view = "pacientes";
+const main = $("#main");
+function nav(v){ view=v; document.querySelectorAll("aside a[data-v]").forEach(a=>a.classList.toggle("on",a.dataset.v===v)); render(); }
+document.querySelectorAll("aside a[data-v]").forEach(a=>a.onclick=()=>nav(a.dataset.v));
+function render(){ if(view==="pacientes") telaPacientes(); else if(view==="agenda") telaAgenda(); }
+
+function telaPacientes(busca=""){
+  const b = busca.toLowerCase();
+  const l = idx.pacientes.filter(p=>!b || p.nome.toLowerCase().includes(b) || (p.sus||"").includes(b)).sort((a,b)=>a.nome.localeCompare(b.nome));
+  main.innerHTML = `<div class="row" style="justify-content:space-between;margin-bottom:14px"><h2 style="margin:0">Pacientes</h2>
+    <button class="btn" id="novoP">+ Novo paciente</button></div>
+    <div class="card"><input id="busca" placeholder="Buscar por nome ou Cartão SUS" value="${esc(busca)}">
+    <table style="margin-top:10px"><tr><th>Nome</th><th>Cartão SUS</th><th>Idade</th><th>Consultas</th><th>Última</th></tr>
+    ${l.map(p=>`<tr class="click" data-id="${p.id}"><td><b>${esc(p.nome)}</b></td><td>${esc(p.sus)}</td><td>${esc(p.idade)}</td><td>${p.n||0}</td><td>${fmtData(p.ultima)}</td></tr>`).join("")||`<tr><td colspan="5" class="mut">Nenhum paciente.</td></tr>`}
+    </table></div>`;
+  $("#busca").oninput = e => { telaPacientes(e.target.value); const i=$("#busca"); i.focus(); i.setSelectionRange(99,99); };
+  $("#novoP").onclick = () => formPaciente();
+  main.querySelectorAll("tr.click").forEach(tr=>tr.onclick=()=>telaPaciente(tr.dataset.id));
+}
+
+function formPaciente(p){
+  const n = !p; p = p || {};
+  const f = (k,l,x="") => `<div><label>${l}</label><input class="up" id="f_${k}" value="${esc(p[k]||"")}" ${x}></div>`;
+  main.innerHTML = `<h2>${n?"Novo paciente":"Editar paciente"}</h2><div class="card"><div class="grid">
+    ${f("nome","Nome completo")}${f("sus","Cartão SUS")}${f("idade","Idade")}${f("procedencia","Procedência")}
+    ${f("residencia","Residência")}${f("parceria","Parceria (estado civil)")}${f("telefone","Telefone")}${f("encaminhamento","Motivo do encaminhamento")}
+    </div><div class="row" style="margin-top:16px"><button class="btn" id="ok">Salvar</button><button class="btn sec" id="cancel">Cancelar</button></div></div>`;
+  $("#cancel").onclick = () => n ? nav("pacientes") : telaPaciente(p.id);
+  $("#ok").onclick = async () => {
+    const q = {...p}; ["nome","sus","idade","procedencia","residencia","parceria","telefone","encaminhamento"].forEach(k=>q[k]=$("#f_"+k).value.trim().toUpperCase());
+    if(!q.nome) return toast("Informe o nome.");
+    q.id ||= uid(); q.consultas ||= [];
+    $("#ok").disabled=true; try{ await gravarPaciente(q); toast("Salvo."); telaPaciente(q.id); }catch(e){ toast("Erro: "+e.message); $("#ok").disabled=false; }
+  };
+}
+
+async function telaPaciente(id){
+  main.innerHTML = `<p class="mut">Carregando…</p>`;
+  let p; try{ p = await getPaciente(id); }catch(e){ return main.innerHTML=`<p>Erro: ${esc(e.message)}</p>`; }
+  const e = idx.pacientes.find(x=>x.id===id);
+  const cs = ordenadas(p);
+  main.innerHTML = `<div class="row" style="justify-content:space-between"><h2 style="margin:0">${esc(p.nome)}</h2>
+    <div class="row"><button class="btn sec sm" id="voltar">← Lista</button><button class="btn sec sm" id="edP">Editar dados</button>
+    <button class="btn sec sm" id="imp">Imprimir prontuário</button>
+    ${e?.docId?`<a class="btn sec sm" target="_blank" href="https://docs.google.com/document/d/${e.docId}/edit" style="text-decoration:none">Abrir no Drive</a>`:""}
+    <button class="btn danger sm" id="delP">Excluir</button></div></div>
+    <div class="card"><div class="rec">${esc(cabecalho(p))}</div></div>
+    <div class="card"><div class="row"><b>Nova consulta:</b>
+    ${Object.entries(TIPOS).map(([k,t])=>`<button class="btn ${t.off?"sec":""} sm" data-t="${k}" ${t.off?"disabled":""}>${t.nome}</button>`).join("")}</div></div>
+    <div class="card"><h3 style="margin-top:0">Histórico</h3>
+    ${cs.map((c,i)=>`<div class="consulta"><h4>${esc(tituloConsulta(p,c,i))} <button class="btn sec sm" data-e="${c.id}">editar</button></h4><div class="rec">${esc(textoConsulta(c))}</div></div>`).join("")||`<p class="mut">Nenhuma consulta ainda.</p>`}</div>`;
+  $("#voltar").onclick=()=>nav("pacientes"); $("#edP").onclick=()=>formPaciente(p);
+  $("#imp").onclick=()=>imprimir(prontuarioHTML(p));
+  $("#delP").onclick=async()=>{ if(!confirm(`Excluir ${p.nome}? No Drive a pasta vai para a lixeira.`)) return;
+    await store.deletePatient(p); idx.pacientes=idx.pacientes.filter(x=>x.id!==id); idx.agenda=idx.agenda.filter(a=>a.pid!==id); delete cachePac[id]; await store.saveIndex(idx); nav("pacientes"); };
+  main.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>formConsulta(p,null,b.dataset.t));
+  main.querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>formConsulta(p,p.consultas.find(c=>c.id===b.dataset.e)));
+}
+
+function formConsulta(p, c, tipo){
+  const n = !c; tipo = c ? c.tipo : tipo;
+  const T = TIPOS[tipo];
+  if(n){
+    c = {id:uid(), tipo, data:hoje(), criada:new Date().toISOString(), v:{}};
+    const prev = ordenadas(p).reverse();
+    for(const f of T.campos){
+      let val = f.d||"";
+      if(f.c){ const q = prev.find(x=>x.v[f.k]); if(q) val = q.v[f.k]; }
+      c.v[f.k]=val;
+    }
+  }
+  const copiados = n && ordenadas(p).length ? "Campos de histórico foram copiados da consulta anterior — confira." : "";
+  let hAtual=null, html="";
+  for(const f of T.campos){
+    if(f.h && f.h!==hAtual){ html+=`<h4 style="margin:16px 0 0;color:var(--pri)">${f.h}</h4>`; }
+    hAtual=f.h||null;
+    html += `<label>${f.k}</label>` + (f.a ? `<textarea data-k="${esc(f.k)}">${esc(c.v[f.k]||"")}</textarea>` : `<input class="up" data-k="${esc(f.k)}" value="${esc(c.v[f.k]||"")}">`);
+  }
+  main.innerHTML = `<h2>${esc(T.nome)} — ${esc(p.nome)}</h2><div class="card">
+    <label>Data</label><input type="date" id="cdata" value="${c.data}" style="max-width:200px">
+    ${copiados?`<p class="hint">⚠ ${copiados}</p>`:""}${html}
+    <p class="hint">Atalhos (digite e aperte espaço): ${Object.keys(SNIPPETS).join("  ")}</p>
+    <div class="row" style="margin-top:14px"><button class="btn" id="ok">Salvar consulta</button><button class="btn sec" id="cancel">Cancelar</button>
+    ${n?"":`<button class="btn danger" id="del">Excluir consulta</button>`}</div></div>`;
+  main.querySelectorAll("[data-k]").forEach(el=>el.addEventListener("input",()=>{
+    const m = el.value.slice(0,el.selectionStart).match(/(\.[a-z0-9]+) $/i);
+    if(m && SNIPPETS[m[1].toLowerCase()]){
+      const pos = el.selectionStart, ini = pos-m[0].length, rep = SNIPPETS[m[1].toLowerCase()]+" ";
+      el.value = el.value.slice(0,ini)+rep+el.value.slice(pos); el.setSelectionRange(ini+rep.length,ini+rep.length);
+    }}));
+  $("#cancel").onclick=()=>telaPaciente(p.id);
+  if($("#del")) $("#del").onclick=async()=>{ if(!confirm("Excluir esta consulta?")) return; p.consultas=p.consultas.filter(x=>x.id!==c.id); await gravarPaciente(p); telaPaciente(p.id); };
+  $("#ok").onclick=async()=>{
+    c.data=$("#cdata").value||hoje();
+    main.querySelectorAll("[data-k]").forEach(el=>c.v[el.dataset.k]=el.value);
+    if(n) p.consultas.push(c);
+    $("#ok").disabled=true; $("#ok").textContent="Salvando…";
+    try{ await gravarPaciente(p); toast("Consulta salva"+(store===DriveStore?" no Drive.":".")); telaPaciente(p.id); }
+    catch(e){ toast("Erro ao salvar: "+e.message); $("#ok").disabled=false; $("#ok").textContent="Salvar consulta"; }
+  };
+}
+
+function telaAgenda(){
+  const l = [...idx.agenda].sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora));
+  const nomes = id => idx.pacientes.find(p=>p.id===id)?.nome||"?";
+  main.innerHTML = `<h2>Agenda</h2><div class="card"><div class="grid">
+    <div><label>Paciente</label><select id="a_p">${idx.pacientes.map(p=>`<option value="${p.id}">${esc(p.nome)}</option>`).join("")}</select></div>
+    <div><label>Data</label><input type="date" id="a_d" value="${hoje()}"></div>
+    <div><label>Hora</label><input type="time" id="a_h" value="08:00"></div>
+    <div><label>Tipo</label><select id="a_t">${Object.entries(TIPOS).filter(([k,t])=>!t.off).map(([k,t])=>`<option value="${k}">${t.nome}</option>`).join("")}</select></div>
+    <div><label>Observação</label><input id="a_o"></div></div>
+    <button class="btn" id="a_add" style="margin-top:12px">Agendar</button></div>
+    <div class="card"><table><tr><th>Data</th><th>Hora</th><th>Paciente</th><th>Tipo</th><th></th></tr>
+    ${l.map(a=>`<tr><td>${fmtData(a.data)}</td><td>${a.hora}</td><td>${esc(nomes(a.pid))}</td><td><span class="tag">${esc(TIPOS[a.tipo]?.nome||"")}</span> ${esc(a.obs||"")}</td>
+    <td><button class="btn sm" data-i="${a.id}">Iniciar consulta</button> <button class="btn danger sm" data-x="${a.id}">✕</button></td></tr>`).join("")||`<tr><td colspan="5" class="mut">Sem agendamentos.</td></tr>`}</table></div>`;
+  $("#a_add").onclick=async()=>{ if(!$("#a_p").value) return toast("Cadastre um paciente primeiro.");
+    idx.agenda.push({id:uid(),pid:$("#a_p").value,data:$("#a_d").value,hora:$("#a_h").value,tipo:$("#a_t").value,obs:$("#a_o").value}); await store.saveIndex(idx); telaAgenda(); };
+  main.querySelectorAll("[data-x]").forEach(b=>b.onclick=async()=>{ idx.agenda=idx.agenda.filter(a=>a.id!==b.dataset.x); await store.saveIndex(idx); telaAgenda(); });
+  main.querySelectorAll("[data-i]").forEach(b=>b.onclick=async()=>{ const a=idx.agenda.find(x=>x.id===b.dataset.i); const p=await getPaciente(a.pid); formConsulta(p,null,a.tipo); });
+}
+
+function imprimir(html){ $("#print").innerHTML=html; window.print(); }
+
+/* ================= LOGIN ================= */
+async function entrar(s){
+  store = s;
+  try{
+    await store.init(); idx = await store.loadIndex();
+    $("#login").style.display="none"; $("#app").style.display="block";
+    $("#who").textContent = s===DriveStore ? (s.user?.email||"") : "Modo demonstração";
+    nav("pacientes");
+  }catch(e){ toast("Falha no login: "+e.message); }
+}
+if(!CFG.GOOGLE_CLIENT_ID){ $("#demoBox").style.display="block"; }
+$("#btnGoogle").onclick = () => CFG.GOOGLE_CLIENT_ID ? entrar(DriveStore) : toast("Configure o Client ID em config.js (veja o LEIA-ME).");
+$("#btnDemo").onclick = () => entrar(DemoStore);
+$("#sair").onclick = () => { if(DriveStore.token && window.google) google.accounts.oauth2.revoke(DriveStore.token); location.reload(); };
+</script>
+</body>
+</html>
