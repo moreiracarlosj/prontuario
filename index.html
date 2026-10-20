@@ -1,754 +1,419 @@
-<!doctype html>
-<html lang="pt-BR">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Prontuário</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
-<style>
-:root{
-  --bg:#f3f6f8;--card:#fff;--tx:#14232e;--mut:#64748b;--bd:#e2e8ee;--bd2:#cfd8e0;
-  --pri:#0e7c86;--pri2:#0a636b;--priS:#e3f4f5;--nav:#0b2f3d;--nav2:#12475a;
-  --ok:#1f8a4c;--okS:#e4f5ea;--warn:#b7791f;--warnS:#fdf3dc;--err:#c0392b;--errS:#fdeceb;
-  --sh:0 1px 2px rgba(15,35,50,.06),0 4px 14px rgba(15,35,50,.06);
-  --t-cir_pre:#b7791f;--t-cir_pos:#d1561f;--t-gin_primeira:#0e7c86;--t-gin_retorno:#2b6cb0;--t-prenatal:#b83280;
-}
-@media (prefers-color-scheme:dark){:root{
-  --bg:#0e161c;--card:#16212a;--tx:#e6edf2;--mut:#93a4b3;--bd:#24323d;--bd2:#31424f;
-  --pri:#2fb3bf;--pri2:#4cc6d1;--priS:#12343a;--nav:#08202a;--nav2:#0f3a49;
-  --okS:#12301f;--warnS:#33280f;--errS:#38191a;--sh:0 1px 2px rgba(0,0,0,.4)}}
-*{box-sizing:border-box}
-body{margin:0;font:14.5px/1.5 Inter,system-ui,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--tx);-webkit-font-smoothing:antialiased}
-button,input,select,textarea{font:inherit;color:inherit}
-svg.i{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
-.btn{display:inline-flex;align-items:center;gap:7px;background:var(--pri);color:#fff;border:1px solid transparent;border-radius:10px;padding:8px 14px;cursor:pointer;font-weight:500;transition:.15s;text-decoration:none;white-space:nowrap}
-.btn:hover{background:var(--pri2)}
-.btn.sec{background:var(--card);color:var(--tx);border-color:var(--bd2)}
-.btn.sec:hover{background:var(--bg)}
-.btn.ghost{background:transparent;color:var(--mut)}
-.btn.ghost:hover{background:var(--bg);color:var(--tx)}
-.btn.danger{background:var(--card);color:var(--err);border-color:var(--bd2)}
-.btn.sm{padding:5px 10px;font-size:13px;border-radius:8px}
-.btn:disabled{opacity:.6;cursor:wait}
-input,select,textarea{width:100%;padding:9px 12px;border:1px solid var(--bd2);border-radius:10px;background:var(--card);outline:none;transition:.15s}
-input:focus,select:focus,textarea:focus{border-color:var(--pri);box-shadow:0 0 0 3px var(--priS)}
-textarea{min-height:62px;resize:vertical;text-transform:uppercase}
-input.up{text-transform:uppercase}
-input.calc{background:var(--priS);border-color:transparent;font-weight:600;color:var(--pri2)}
-label{display:block;font-size:11.5px;font-weight:600;color:var(--mut);margin:14px 0 5px;text-transform:uppercase;letter-spacing:.05em}
-.mut{color:var(--mut)}
-h1,h2,h3{margin:0;letter-spacing:-.01em}
-h2{font-size:22px}
-
-/* login */
-#login{min-height:100vh;display:grid;grid-template-columns:1.1fr 1fr}
-#login .hero{background:linear-gradient(145deg,var(--nav),var(--pri));color:#fff;padding:56px;display:flex;flex-direction:column;justify-content:center;gap:22px}
-#login .hero h1{font-size:38px;line-height:1.15;font-weight:700}
-#login .hero li{margin:8px 0;opacity:.92}
-#login .box{display:flex;flex-direction:column;justify-content:center;align-items:center;padding:40px;gap:12px;text-align:center}
-.logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px}
-.logo b{width:36px;height:36px;border-radius:10px;background:#fff;color:var(--pri);display:grid;place-items:center;font-size:19px}
-
-/* app shell */
-#app{display:none}
-aside{position:fixed;inset:0 auto 0 0;width:226px;background:linear-gradient(180deg,var(--nav),var(--nav2));color:#cfe3ea;padding:18px 12px;display:flex;flex-direction:column;gap:4px;z-index:5}
-aside .logo{color:#fff;margin:2px 8px 18px}
-aside .logo b{background:var(--pri);color:#fff}
-aside a{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;cursor:pointer;color:#cfe3ea;font-weight:500}
-aside a:hover{background:rgba(255,255,255,.08)}
-aside a.on{background:rgba(255,255,255,.14);color:#fff}
-#who{margin-top:auto;font-size:12px;color:#8fb1bd;padding:10px 12px;word-break:break-all}
-.top{position:sticky;top:0;z-index:4;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);padding:14px 28px;display:flex;gap:12px;align-items:center;border-bottom:1px solid var(--bd)}
-.top .s{position:relative;flex:1;max-width:460px}
-.top .s svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--mut)}
-.top .s input{padding-left:38px;border-radius:999px}
-main{margin-left:226px}
-#page{padding:26px 28px 60px;max-width:1280px}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:18px 20px;box-shadow:var(--sh);margin-bottom:16px}
-.card h3{font-size:15px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
-.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.between{justify-content:space-between}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:0 16px}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:16px}
-.stat{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:16px 18px;box-shadow:var(--sh)}
-.stat b{display:block;font-size:30px;line-height:1.1;margin-top:4px}
-.stat span{color:var(--mut);font-size:13px}
-.stat.p{background:linear-gradient(135deg,var(--pri),var(--nav2));color:#fff;border:0}.stat.p span{color:#cfeaee}
-
-/* listas */
-.li{display:flex;align-items:center;gap:14px;padding:12px 8px;border-bottom:1px solid var(--bd);cursor:pointer;border-radius:10px}
-.li:last-child{border-bottom:0}
-.li:hover{background:var(--bg)}
-.av{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-weight:600;color:#fff;flex:none}
-.li .n{font-weight:600}
-.li .m{color:var(--mut);font-size:13px}
-.li .sp{flex:1;min-width:0}
-.tag{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:500;background:var(--bg);color:var(--mut);border:1px solid var(--bd)}
-.tag.ok{background:var(--okS);color:var(--ok);border-color:transparent}
-.tag.warn{background:var(--warnS);color:var(--warn);border-color:transparent}
-.tag.err{background:var(--errS);color:var(--err);border-color:transparent}
-.tag.pri{background:var(--priS);color:var(--pri2);border-color:transparent}
-.empty{text-align:center;padding:36px 10px;color:var(--mut)}
-
-/* paciente */
-.banner{background:linear-gradient(120deg,var(--nav),var(--pri));color:#fff;border-radius:16px;padding:18px 22px;display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin-bottom:16px;box-shadow:var(--sh)}
-.banner .av{width:58px;height:58px;font-size:22px;background:rgba(255,255,255,.2)}
-.banner h2{font-size:23px}
-.banner .sub{opacity:.85;font-size:13.5px;margin-top:2px}
-.banner .tag{background:rgba(255,255,255,.16);color:#fff;border:0}
-.banner .tag.err{background:#e5484d}
-.banner .tag.warn{background:#e0a21b;color:#2b1d00}
-.cols{display:grid;grid-template-columns:1fr 310px;gap:16px;align-items:start}
-.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
-.tile{border:1.5px solid var(--bd);background:var(--card);border-radius:12px;padding:12px;cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:2px;transition:.15s;border-top:4px solid var(--c)}
-.tile:hover{transform:translateY(-2px);box-shadow:var(--sh)}
-.tile small{color:var(--mut);font-size:12px}
-.tile:disabled{opacity:.45;cursor:not-allowed}
-.tl{position:relative;padding-left:22px}
-.tl:before{content:"";position:absolute;left:6px;top:6px;bottom:6px;width:2px;background:var(--bd2)}
-.ev{position:relative;border:1px solid var(--bd);border-radius:12px;padding:12px 14px;margin-bottom:12px;background:var(--card)}
-.ev:before{content:"";position:absolute;left:-22px;top:18px;width:12px;height:12px;border-radius:50%;background:var(--c);border:3px solid var(--card);box-shadow:0 0 0 2px var(--c)}
-.ev .h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;cursor:pointer}
-.ev .h b{font-size:14px}
-.ev .body{display:none;margin-top:10px;padding-top:10px;border-top:1px dashed var(--bd2)}
-.ev.open .body{display:block}
-.rec{white-space:pre-wrap;font:13px/1.55 "JetBrains Mono",Consolas,monospace;text-transform:uppercase}
-.kv{display:flex;flex-direction:column;gap:2px;margin-bottom:12px;font-size:13px}
-.kv b{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);font-weight:600}
-
-/* consulta */
-.cbar{position:sticky;top:61px;z-index:3;background:var(--bg);padding:10px 0;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.cbar h2{font-size:19px;flex:1}
-.cgrid{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;align-items:start}
-.prev{position:sticky;top:128px;max-height:calc(100vh - 150px);overflow:auto}
-.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:7px}
-.chip{border:1px solid var(--bd2);background:var(--card);border-radius:999px;padding:3px 11px;font-size:12px;cursor:pointer;color:var(--mut);user-select:none;transition:.12s;text-transform:uppercase}
-.chip:hover{border-color:var(--pri);color:var(--pri)}
-.chip.on{background:var(--pri);border-color:var(--pri);color:#fff}
-.sv{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-.sv label{margin-top:0}
-.warnmsg{color:var(--err);font-size:12px;margin-top:4px;min-height:0}
-.hint{font-size:12px;color:var(--mut)}
-.note{background:var(--warnS);color:var(--warn);border-radius:10px;padding:8px 12px;font-size:13px;margin-bottom:6px}
-#toast{position:fixed;bottom:22px;right:22px;background:var(--nav);color:#fff;padding:11px 18px;border-radius:12px;display:none;z-index:99;box-shadow:var(--sh)}
-#print{display:none}
-@media print{
-  @page{margin:16mm}
-  body{background:#fff;color:#000}
-  #app,#login,#toast{display:none!important}
-  #print{display:block;font:10.5pt/1.5 Inter,Arial,sans-serif;color:#000}
-  #print .ph{border-bottom:2px solid #0e7c86;padding-bottom:6pt;margin-bottom:10pt;display:flex;justify-content:space-between}
-  #print .ph b{font-size:13pt}
-  #print .pp{background:#f1f5f7;padding:7pt 9pt;border-radius:4pt;margin-bottom:10pt;white-space:pre-wrap;text-transform:uppercase;font-size:10pt}
-  #print h3{font-size:10.5pt;margin:12pt 0 3pt;padding:3pt 6pt;background:#e3f4f5;border-left:3pt solid #0e7c86;break-after:avoid}
-  #print .rec{font:10pt/1.5 "Courier New",monospace}
-  #print .sig{margin-top:44pt;text-align:center}
-  #print .sig div{border-top:1px solid #000;width:260pt;margin:0 auto 3pt}
-}
-@media (max-width:1000px){.cols,.cgrid{grid-template-columns:1fr}.prev{position:static;max-height:none}#login{grid-template-columns:1fr}#login .hero{display:none}}
-@media (max-width:760px){aside{position:static;width:auto;flex-direction:row;flex-wrap:wrap;padding:8px}aside .logo,#who{display:none}main{margin-left:0}.top,#page{padding-left:14px;padding-right:14px}.sv{grid-template-columns:1fr 1fr}.cbar{top:0}}
-</style>
-</head>
-<body>
-<div id="login">
-  <div class="hero">
-    <div class="logo"><b>P</b> Prontuário</div>
-    <h1>Seu prontuário,<br>rápido e organizado.</h1>
-    <ul style="padding-left:18px;font-size:16px">
-      <li>Consulta copiada da anterior, com cálculos automáticos</li>
-      <li>Atalhos e botões para escrever menos</li>
-      <li>Impressão pronta para o prontuário físico</li>
-      <li>Seus dados ficam no <b>seu</b> Google Drive</li>
-    </ul>
-  </div>
-  <div class="box">
-    <h2>Entrar</h2>
-    <button class="btn" id="btnGoogle" style="padding:11px 22px;font-size:15px">Entrar com Google</button>
-    <div id="demoBox" style="display:none"><button class="btn sec" id="btnDemo">Modo demonstração</button>
-    <div class="hint" style="margin-top:6px">Dados salvos só neste navegador.</div></div>
-    <p class="hint" style="max-width:340px">Ferramenta de apoio ao atendimento. Imprima e assine para validade do prontuário em papel.</p>
-    <p class="hint"><a href="privacidade.html">Política de Privacidade</a> · <a href="termos.html">Termos de uso</a></p>
-  </div>
-</div>
-
-<div id="app">
-  <aside>
-    <div class="logo"><b>P</b> Prontuário</div>
-    <a data-v="hoje"></a><a data-v="pacientes"></a><a data-v="agenda"></a><a data-v="modelos"></a><a data-v="perfil"></a>
-    <div id="who"></div>
-    <a id="sair"></a>
-  </aside>
-  <main>
-    <div class="top"><div class="s"><span id="icSearch"></span><input id="gsearch" placeholder="Buscar paciente por nome ou Cartão SUS  (Ctrl+K)"></div>
-      <button class="btn" id="topNovo"></button></div>
-    <div id="page"></div>
-  </main>
-</div>
-<div id="print"></div>
-<div id="toast"></div>
-
-<script src="config.js"></script>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
-<script>
 "use strict";
-const CFG = window.PRONTUARIO_CONFIG;
-const $ = (s, r=document) => r.querySelector(s);
-const $$ = (s, r=document) => [...r.querySelectorAll(s)];
-const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
-const hoje = () => { const d=new Date(); return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10); };
-const fmtData = d => d ? d.split("-").reverse().join("/") : "";
-const toast = m => { const t=$("#toast"); t.textContent=m; t.style.display="block"; clearTimeout(toast.t); toast.t=setTimeout(()=>t.style.display="none",3000); };
+/* Documentos: modelos por foto, pedidos de exame e receitas.
+   Usa as funções globais de index.html ($, esc, store, idx, page, nav, toast...). */
 
-/* ---------- ícones ---------- */
-const P = {
-  home:"M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z",
-  users:"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8",
-  cal:"M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z",
-  plus:"M12 5v14M5 12h14", search:"M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16M21 21l-4.3-4.3",
-  print:"M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z",
-  edit:"M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z", trash:"M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6",
-  check:"M20 6 9 17l-5-5", alert:"M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z",
-  user:"M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8",
-  out:"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9",
-  file:"M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6", back:"M15 18l-6-6 6-6",
-  clock:"M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20M12 6v6l4 2", ext:"M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3",
-  save:"M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2zM17 21v-8H7v8M7 3v5h8"
+const FTYPES = {nome:"Nome da paciente", sus:"Cartão SUS", idade:"Idade", data:"Data", endereco:"Endereço",
+  medico:"Médico (nome e CRM)", conteudo:"Conteúdo principal", obs:"Indicação clínica / CID"};
+const FDEF = {nome:{w:50,h:3.6,fs:.022}, sus:{w:30,h:3.6,fs:.022}, idade:{w:14,h:3.6,fs:.022}, data:{w:18,h:3.6,fs:.022},
+  endereco:{w:50,h:3.6,fs:.02}, medico:{w:40,h:6,fs:.02}, conteudo:{w:84,h:45,fs:.024}, obs:{w:84,h:6,fs:.02}};
+const mk = (tipo,x,y,w,h,fs) => ({id:uid(),tipo,x,y,w,h,fs:fs||FDEF[tipo].fs});
+const PADRAO = [
+  {id:"padrao_exames", nome:"Padrão · pedido de exames", tipo:"exames", img:"", ratio:1.414, titulo:"SOLICITAÇÃO DE EXAMES", padrao:1,
+   campos:[mk("nome",8,12,60,3.4), mk("idade",70,12,22,3.4), mk("sus",8,17,50,3.4), mk("data",70,17,22,3.4), mk("obs",8,23,84,5,.02),
+           mk("conteudo",8,31,84,52), mk("medico",50,90,42,6)]},
+  {id:"padrao_receita", nome:"Padrão · receituário", tipo:"receita", img:"", ratio:1.414, titulo:"RECEITUÁRIO", padrao:1,
+   campos:[mk("nome",8,12,60,3.4), mk("idade",70,12,22,3.4), mk("data",70,17,22,3.4), mk("conteudo",8,25,84,58), mk("medico",50,90,42,6)]}
+];
+const PACOTES = {
+  "Pré-natal · 1º trimestre":["HEMOGRAMA COMPLETO","TIPAGEM SANGUÍNEA ABO/RH","GLICEMIA DE JEJUM","VDRL","ANTI-HIV","HBSAG","ANTI-HCV","TOXOPLASMOSE IGG E IGM","EAS","UROCULTURA COM ANTIBIOGRAMA","TSH","USG OBSTÉTRICO"],
+  "Pré-natal · 2º trimestre":["TOTG 75G (JEJUM, 1H, 2H)","HEMOGRAMA COMPLETO","EAS","UROCULTURA COM ANTIBIOGRAMA","USG MORFOLÓGICO"],
+  "Pré-natal · 3º trimestre":["HEMOGRAMA COMPLETO","GLICEMIA DE JEJUM","VDRL","ANTI-HIV","HBSAG","TOXOPLASMOSE IGG E IGM","EAS","UROCULTURA COM ANTIBIOGRAMA","USG OBSTÉTRICO COM DOPPLER","CULTURA PARA STREPTOCOCCUS AGALACTIAE (35-37 SEMANAS)"],
+  "Ginecologia · rotina":["CITOLOGIA ONCÓTICA","MAMOGRAFIA BILATERAL","USG TRANSVAGINAL","HEMOGRAMA COMPLETO","GLICEMIA DE JEJUM","TSH"],
+  "Climatério":["FSH","ESTRADIOL","TSH","PERFIL LIPÍDICO","GLICEMIA DE JEJUM","MAMOGRAFIA BILATERAL","USG TRANSVAGINAL","DENSITOMETRIA ÓSSEA"],
+  "Pré-operatório":["HEMOGRAMA COMPLETO","COAGULOGRAMA","GLICEMIA DE JEJUM","UREIA","CREATININA","TIPAGEM SANGUÍNEA ABO/RH","ECG"]
 };
-const ic = n => `<svg class="i" viewBox="0 0 24 24"><path d="${P[n]}"/></svg>`;
-const lab = (n,t) => ic(n)+`<span>${t}</span>`;
+const EXAMES = ["HEMOGRAMA COMPLETO","TIPAGEM SANGUÍNEA ABO/RH","COOMBS INDIRETO","GLICEMIA DE JEJUM","TOTG 75G","HEMOGLOBINA GLICADA","VDRL","FTA-ABS","ANTI-HIV","HBSAG","ANTI-HBS","ANTI-HCV",
+  "TOXOPLASMOSE IGG E IGM","RUBÉOLA IGG E IGM","CITOMEGALOVÍRUS IGG E IGM","EAS","UROCULTURA COM ANTIBIOGRAMA","PARASITOLÓGICO DE FEZES","TSH","T4 LIVRE","FSH","LH","ESTRADIOL","PROGESTERONA","PROLACTINA",
+  "TESTOSTERONA TOTAL","SDHEA","17-OH PROGESTERONA","BETA-HCG QUANTITATIVO","CA-125","PERFIL LIPÍDICO","TGO","TGP","CREATININA","UREIA","ÁCIDO ÚRICO","LDH","RELAÇÃO PROTEÍNA/CREATININA EM URINA ISOLADA",
+  "PROTEINÚRIA DE 24H","COAGULOGRAMA","FERRITINA","FERRO SÉRICO","VITAMINA D","VITAMINA B12","CITOLOGIA ONCÓTICA","COLPOSCOPIA","BACTERIOSCOPIA DE SECREÇÃO VAGINAL","CULTURA DE SECREÇÃO VAGINAL","PCR PARA CHLAMYDIA/GONOCOCO",
+  "MAMOGRAFIA BILATERAL","USG DE MAMAS","USG TRANSVAGINAL","USG PÉLVICO","USG OBSTÉTRICO","USG OBSTÉTRICO COM DOPPLER","USG MORFOLÓGICO","ECOCARDIOGRAMA FETAL","PERFIL BIOFÍSICO FETAL","CARDIOTOCOGRAFIA",
+  "HISTEROSSALPINGOGRAFIA","HISTEROSCOPIA DIAGNÓSTICA","RESSONÂNCIA MAGNÉTICA DE PELVE","DENSITOMETRIA ÓSSEA","ECG","RX DE TÓRAX","AVALIAÇÃO CARDIOLÓGICA","AVALIAÇÃO ANESTESIOLÓGICA"];
 
-/* ---------- datas e cálculos ---------- */
-function idadeDe(p){
-  if(p.nascimento){ const n=new Date(p.nascimento), h=new Date(); let a=h.getFullYear()-n.getFullYear();
-    if(h.getMonth()<n.getMonth()||(h.getMonth()===n.getMonth()&&h.getDate()<n.getDate())) a--; return a>=0?String(a):""; }
-  return p.idade||"";
+/* ---------- dados auxiliares ---------- */
+let MOD=null, FAV=null;
+async function getModelos(){ if(!MOD) MOD=(await store.loadAux("modelos.json"))||[]; return [...PADRAO,...MOD]; }
+async function getFav(){ if(!FAV) FAV=(await store.loadAux("favoritos.json"))||{exames:[],receita:[]}; return FAV; }
+
+/* ---------- estilos ---------- */
+document.head.insertAdjacentHTML("beforeend",`<style id="docstyle">
+.dpage{position:relative;background:#fff;container-type:inline-size;overflow:hidden;margin:0 auto;box-shadow:var(--sh);color:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.dpage .bg{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;user-select:none;-webkit-user-drag:none;pointer-events:none}
+.dtitle{position:absolute;left:8%;right:8%;top:4%;text-align:center;font:700 3.2cqw Arial,sans-serif;border-bottom:.35cqw solid #000;padding-bottom:1cqw}
+.dfield{position:absolute;overflow:hidden;white-space:pre-wrap;line-height:1.25;font-family:Arial,sans-serif;color:#000;box-sizing:border-box}
+.dpage.edit .dfield{outline:1.5px dashed #0e7c86;background:rgba(14,124,134,.14);cursor:move;overflow:visible;touch-action:none}
+.dpage.edit .dfield.sel{outline:2px solid #0e7c86;background:rgba(14,124,134,.28)}
+.dpage.edit .dfield .tg{position:absolute;left:0;top:-16px;font:600 10px Inter,sans-serif;background:#0e7c86;color:#fff;padding:1px 6px;border-radius:3px;white-space:nowrap;pointer-events:none}
+.dpage.edit .dfield .hd{position:absolute;right:-6px;bottom:-6px;width:12px;height:12px;background:#0e7c86;border-radius:3px;cursor:nwse-resize}
+.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
+.mcard{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px;box-shadow:var(--sh);display:flex;flex-direction:column;gap:8px}
+.mcard .th{background:var(--bg);border-radius:8px;padding:8px;height:230px;overflow:hidden}
+.mcard .th .dpage{width:100%;max-width:160px}
+.edgrid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:16px;align-items:start}
+.stage{background:var(--bg);border-radius:12px;padding:14px}
+.stage .dpage{max-width:640px;touch-action:none}
+.pk{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.chip .x{margin-left:6px;opacity:.7}
+@media print{.dpage{box-shadow:none;margin:0;page-break-after:always;break-after:page}.dpage:last-child{page-break-after:auto}}
+@media (max-width:1000px){.edgrid{grid-template-columns:1fr}}
+</style>`);
+window.addEventListener("afterprint",()=>{ $("#pgstyle")?.remove(); });
+function imprimirDoc(html){ $("#print").innerHTML=html; document.head.insertAdjacentHTML("beforeend",`<style id="pgstyle">@page{size:A4;margin:0}</style>`); window.print(); }
+
+/* ---------- renderização da página ---------- */
+const AMOSTRA = {nome:"MARIA DA SILVA SANTOS", sus:"700000000000000", idade:"35 anos", data:fmtData(hoje()), endereco:"RUA EXEMPLO, 123 – CENTRO",
+  medico:"Dr. Fulano de Tal\nCRM 00000", conteudo:"HEMOGRAMA COMPLETO\nGLICEMIA DE JEJUM\nUSG TRANSVAGINAL", obs:"CID: Z34.9"};
+function valoresDoc(p,texto,obs){
+  const f=perfil(), idade=idadeDe(p);
+  return {nome:p.nome, sus:p.sus||"", idade:idade?idade+" anos":"", data:fmtData(hoje()), endereco:[p.residencia,p.procedencia].filter(Boolean).join(" – "),
+    medico:[f.nome, f.crm&&"CRM "+f.crm].filter(Boolean).join("\n"), conteudo:texto||"", obs:obs||""};
 }
-const diasEntre = (a,b) => Math.round((new Date(b)-new Date(a))/864e5);
-const somaDias = (iso,n) => { const d=new Date(iso+"T12:00:00Z"); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); };
-const fmtIG = d => d>=0&&d<=315 ? `${Math.floor(d/7)}S + ${d%7}D` : "";
-const igDias = v => { const s=parseInt(v["US IG (SEM)"]), d=parseInt(v["US IG (DIAS)"])||0; return isNaN(s)?null:s*7+d; };
-const VAL = {
-  PA:v=>{ const m=v.match(/(\d+)\s*[xX\/]\s*(\d+)/); return m&&(+m[1]>260||+m[2]>160||+m[2]>=+m[1]||+m[1]<60)?"Valor incomum. Confira a pressão digitada.":""; },
-  BCF:v=>v&&(+v<110||+v>160)?"BCF fora de 110–160 bpm. Confira.":"",
-  AU:(v,a)=>{ const w=a.DUM&&a.__data?diasEntre(a.DUM,a.__data)/7:null; return v&&w>=20&&w<=42&&Math.abs(+v-w)>3?`AU discrepante da IG (~${Math.round(w)} cm esperados).`:""; }
-};
-const CALC = {
-  IG_DUM: (v,c) => v.DUM ? fmtIG(diasEntre(v.DUM,c.data)) : "",
-  IG_US: (v,c) => { const b=igDias(v); return v["US DATA"]&&b!==null ? fmtIG(b+diasEntre(v["US DATA"],c.data)) : ""; },
-  DPP_DUM: v => v.DUM ? fmtData(somaDias(v.DUM,280)) : "",
-  DPP_US: v => { const b=igDias(v); return v["US DATA"]&&b!==null ? fmtData(somaDias(v["US DATA"],280-b)) : ""; },
-  IMC: v => { const p=parseFloat((v.PESO||"").replace(",",".")), h=parseFloat((v.ALTURA||"").replace(",","."));
-    return p>0&&h>0 ? (p/Math.pow(h>3?h/100:h,2)).toFixed(1).replace(".",",") : ""; },
-  DPO: (v,c) => { const d=v["DATA DA CIRURGIA"]; if(!d) return ""; const n=diasEntre(d,c.data); return n>=0?String(n):""; }
-};
-const cor = s => { let h=0; for(const ch of s) h=(h*31+ch.charCodeAt(0))>>>0; return `hsl(${h%360} 45% 42%)`; };
-const iniciais = n => n.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join("").toUpperCase();
-
-/* ---------- modelos de consulta ---------- */
-const S = {D:"Datação da gestação",Q:"Queixa e história",A:"Antecedentes",G:"História ginecológica e obstétrica",E:"Exame físico",X:"Exames e avaliações",C:"Diagnóstico e conduta"};
-const EFCH = ["BEG, HIDRATADA, CORADA.","MAMAS SEM ALTERAÇÕES.","ABDOME NORMOTENSO, INDOLOR À PALPAÇÃO.","VULVA EUTRÓFICA, SEM LESÕES APARENTES.",
-  "TV: ÚTERO AVF, COLO COM CONSISTÊNCIA GINECOLÓGICA, ANEXOS LIVRES.","EE: VAGINA TRÓFICA, COLO PLANO, SEM ALTERAÇÕES VISÍVEIS.","COLETO CTO.","PACIENTE NÃO DESEJA SER EXAMINADA"];
-const SV = [
-  {k:"PESO", s:"E", sv:v=>`P: ${v} KG`, u:"kg", num:1},
-  {k:"ALTURA", s:"E", sv:v=>`H: ${v} CM`, u:"cm", num:1, c:1},
-  {k:"IMC", s:"E", sv:v=>`IMC: ${v}`, calc:"IMC"},
-  {k:"PA", s:"E", sv:v=>`PA: ${v} MMHG`, u:"mmHg", ph:"120x70", pa:1}
-];
-const HPP = [
-  {k:"COMORBIDADES", h:"HPP", s:"A", c:1, sep:", ", ch:["NEGA","HAS","DM","DMII","HIPOTIREOIDISMO","ASMA","OBESIDADE","DEPRESSÃO","ANSIEDADE","TROMBOSE/TEV","ENXAQUECA"]},
-  {k:"MEDICAMENTOS", h:"HPP", s:"A", c:1, ph:"Medicamentos em uso"},
-  {k:"ALERGIAS", h:"HPP", s:"A", c:1, d:"NEGA", sep:", ", ch:["NEGA","DIPIRONA","PENICILINA","LÁTEX","SULFA"]},
-  {k:"CIRURGIAS PRÉVIAS", h:"HPP", s:"A", c:1, sep:", ", ch:["NEGA","CESARIANA","LAQUEADURA","HISTERECTOMIA","APENDICECTOMIA"]}
-];
-const HS = [
-  {k:"ATIVIDADE FÍSICA", h:"HS", s:"A", c:1, sep:", ", ch:["NEGA","REGULAR"]},
-  {k:"VÍCIOS", h:"HS", s:"A", c:1, sep:", ", ch:["NEGA","TABAGISMO","ETILISMO"]}
-];
-const TIPOS = {
-  cir_pre: {nome:"Cirurgia · pré-operatório", curto:"Pré-operatório", grupo:"Cirurgia", sub:"Indicação, risco e preparo", campos:[
-    {k:"INDICAÇÃO CIRÚRGICA", a:1, s:"Q"},
-    {k:"PROCEDIMENTO PROPOSTO", a:1, s:"Q", sep:"\n", ch:["HISTERECTOMIA TOTAL","HISTEROSCOPIA CIRÚRGICA","MIOMECTOMIA","VIDEOLAPAROSCOPIA","LAQUEADURA TUBÁRIA","SALPINGECTOMIA","COLPOPERINEOPLASTIA","CIRURGIA PARA INCONTINÊNCIA"]},
-    ...HPP,
-    ...SV,
-    {k:"EF", a:1, s:"E", d:"BEG, HIDRATADA, CORADA.", sep:" ", ch:EFCH},
-    {k:"EXAMES PRÉ-OPERATÓRIOS", a:1, s:"X", sep:"\n", ch:["ECG","HEMOGRAMA","COAGULOGRAMA","GLICEMIA","UREIA E CREATININA","TIPAGEM SANGUÍNEA","USTV","AVALIAÇÃO CARDIOLÓGICA"]},
-    {k:"RISCO ANESTÉSICO", s:"X", one:["ASA I","ASA II","ASA III","ASA IV","PENDENTE"]},
-    {k:"TERMO DE CONSENTIMENTO", s:"X", one:["ASSINADO","PENDENTE"]},
-    {k:"DATA PREVISTA DA CIRURGIA", s:"X", date:1},
-    {k:"HD", a:1, s:"C", sep:"\n", ch:["SUA + MIOMATOSE","PROLAPSO GENITAL","INCONTINÊNCIA URINÁRIA","CISTO OVARIANO","ENDOMETRIOSE"]},
-    {k:"CD", a:1, s:"C", sep:"\n", ch:["ORIENTO","ENCAMINHO À ANESTESIOLOGIA","SOLICITO REVISÃO LABORATORIAL E ECG","ORIENTO JEJUM","SUSPENDER AAS/ANTICOAGULANTE","AGENDO CIRURGIA"]}]},
-  cir_pos: {nome:"Cirurgia · pós-operatório", curto:"Pós-operatório", grupo:"Cirurgia", sub:"Evolução, ferida e alta", campos:[
-    {k:"DATA DA CIRURGIA", s:"Q", date:1, from:"DATA PREVISTA DA CIRURGIA"},
-    {k:"PROCEDIMENTO REALIZADO", a:1, s:"Q", from:"PROCEDIMENTO PROPOSTO"},
-    {k:"DPO", s:"Q", calc:"DPO"},
-    {k:"QUEIXAS", a:1, s:"Q", sep:"\n", ch:["SEM QUEIXAS","DOR LEVE","SANGRAMENTO LEVE","FEBRE","NÁUSEAS"]},
-    {k:"MEDICAMENTOS", s:"A", c:1},
-    ...SV,
-    {k:"EF", a:1, s:"E", d:"BEG, HIDRATADA, CORADA.", sep:" ", ch:[...EFCH.slice(0,3),"FERIDA OPERATÓRIA LIMPA, SECA, SEM SINAIS FLOGÍSTICOS.","SEM SECREÇÃO VAGINAL ANORMAL."]},
-    {k:"ANATOMOPATOLÓGICO", a:1, s:"X", sep:"\n", ch:["AGUARDANDO RESULTADO","LAUDO SEM ALTERAÇÕES","LAUDO ANEXADO"]},
-    {k:"HD", a:1, s:"C", sep:"\n", ch:["PÓS-OPERATÓRIO SEM INTERCORRÊNCIAS"]},
-    {k:"CD", a:1, s:"C", sep:"\n", ch:["ORIENTO","ALTA AMBULATORIAL","RETIRO PONTOS","RETORNO EM 30 DIAS","RETORNO COM ANATOMOPATOLÓGICO","LIBERO ATIVIDADES"]}]},
-  gin_primeira: {nome:"Ginecologia · 1ª consulta", curto:"1ª consulta", grupo:"Ginecologia", sub:"Anamnese completa", campos:[
-    {k:"QP", s:"Q", ch:["HEMORRAGIA SIC","AMENORREIA","DOR PÉLVICA","CORRIMENTO","CLIMATÉRIO","CONTRACEPÇÃO","REVISÃO"], sep:", "},
-    {k:"HMA", a:1, s:"Q"},
-    ...HPP, ...HS,
-    {k:"HF", a:1, s:"A", c:1, sep:", ", ch:["MÃE HAS","MÃE DM","PAI CA PRÓSTATA","CA MAMA","CA OVÁRIO","CA COLO","CA ENDOMÉTRIO"]},
-    {k:"G/P/A", h:"HGO", s:"G", c:1, ph:"G2P1C1A0"}, {k:"DUM", h:"HGO", s:"G", date:1},
-    {k:"CICLOS", h:"HGO", s:"G", c:1, ph:"30/3-4"}, {k:"MENARCA", h:"HGO", s:"G", c:1}, {k:"SEXARCA", h:"HGO", s:"G", c:1},
-    {k:"MENOPAUSA", h:"HGO", s:"G", c:1}, {k:"Nº DE PARCERIAS", h:"HGO", s:"G", c:1},
-    {k:"MÉTODO CONTRACEPTIVO", h:"HGO", s:"G", c:1, sep:", ", ch:["NENHUM","ACO","DIU DE COBRE","DIU MIRENA","LAQUEADURA","PRESERVATIVO","IMPLANTE"]},
-    ...SV,
-    {k:"EF", a:1, s:"E", d:"BEG, HIDRATADA, CORADA.", sep:" ", ch:EFCH},
-    {k:"EXAMES", a:1, s:"X"},
-    {k:"HD", a:1, s:"C", sep:"\n", ch:["CLIMATÉRIO","SUA","MIOMATOSE","CISTO OVARIANO","ENDOMETRIOSE","DISMENORREIA","INCONTINÊNCIA URINÁRIA","VAGINITE","PROLAPSO GENITAL","DOR PÉLVICA CRÔNICA"]},
-    {k:"CD", a:1, s:"C", sep:"\n", ch:["ORIENTO","SOLICITO EXAMES","MAMOGRAFIA","USTV","CITOLOGIA ONCÓTICA","COLETO CTO","RETORNO COM EXAMES","ENCAMINHO À ANESTESIOLOGIA","PRESCREVO ANTICONCEPCIONAL","PROGRAMO CIRURGIA"]}]},
-  gin_retorno: {nome:"Ginecologia · retorno", curto:"Retorno", grupo:"Ginecologia", sub:"Resultados e conduta", campos:[
-    {k:"QUEIXAS", a:1, s:"Q", sep:"\n", ch:["SEM QUEIXAS NO MOMENTO","RETORNO COM RESULTADO DE EXAMES"]},
-    {k:"MEDICAMENTOS", s:"A", c:1},
-    ...SV,
-    {k:"EF", a:1, s:"E", d:"BEG, HIDRATADA, CORADA.", sep:" ", ch:EFCH},
-    {k:"EXAMES", a:1, s:"X", c:1},
-    {k:"HD", a:1, s:"C", sep:"\n", ch:["CLIMATÉRIO","SUA","MIOMATOSE","CISTO OVARIANO","ENDOMETRIOSE","VAGINITE"]},
-    {k:"CD", a:1, s:"C", sep:"\n", ch:["ORIENTO","MANTENHO CONDUTA","SOLICITO EXAMES","RETORNO COM EXAMES","ALTA AMBULATORIAL","PROGRAMO CIRURGIA"]}]},
-  prenatal: {nome:"Pré-natal", curto:"Pré-natal", grupo:"Pré-natal", sub:"IG, DPP e conduta automáticos", campos:[
-    {k:"EM USO DE", s:"Q", c:1, sep:", ", ch:["ÁCIDO FÓLICO","SULFATO FERROSO","AAS","CÁLCIO","METILDOPA","INSULINA","LEVOTIROXINA"]},
-    {k:"QUEIXAS", a:1, s:"Q", sep:"\n", ch:["SEM QUEIXAS NO MOMENTO","RETORNO COM RESULTADO DE EXAMES","NÁUSEAS","DOR LOMBAR","PERDA DE LÍQUIDO","SANGRAMENTO"]},
-    {k:"DUM", s:"D", date:1, c:1, hide:1},
-    {k:"US DATA", s:"D", date:1, c:1, hide:1, lbl:"Data do 1º ultrassom"},
-    {k:"US IG (SEM)", s:"D", num:1, c:1, hide:1, lbl:"IG no US · semanas"},
-    {k:"US IG (DIAS)", s:"D", num:1, c:1, hide:1, lbl:"IG no US · dias"},
-    {k:"IG POR US", s:"D", calc:"IG_US", grp:"ig", sv:(v,a)=>`IG: ${v} (US ${fmtData(a["US DATA"])} COM ${a["US IG (SEM)"]}S+${a["US IG (DIAS)"]||0}D)`},
-    {k:"IG POR DUM", s:"D", calc:"IG_DUM", grp:"ig", sv:(v,a)=>`IG: ${v} (DUM ${fmtData(a.DUM)})`},
-    {k:"DPP POR US", s:"D", calc:"DPP_US", grp:"ig", sv:v=>`DPP (US): ${v}`},
-    {k:"DPP POR DUM", s:"D", calc:"DPP_DUM", grp:"ig", sv:v=>`DPP (DUM): ${v}`},
-    {k:"G/P/A", h:"HGO", s:"G", c:1, ph:"G2P1C1A0"},
-    {k:"GS RH", h:"HGO", s:"G", c:1, one:["O+","O-","A+","A-","B+","B-","AB+","AB-"]},
-    {k:"TOXOPLASMOSE", h:"HGO", s:"G", c:1, one:["IMUNE","SUSCETÍVEL","IGM REAGENTE","NÃO REALIZADO"]},
-    {k:"GESTAÇÃO PLANEJADA", h:"HGO", s:"G", c:1, one:["SIM","NÃO"]},
-    {k:"RISCO", h:"HGO", s:"G", c:1, one:["HABITUAL","ALTO RISCO"]},
-    {k:"VACINAS EM DIA", h:"HGO", s:"G", c:1, sep:", ", ch:["HEP B","DTPA","INFLUENZA","COVID-19","VSR"]},
-    ...HPP,
-    {k:"PESO", s:"E", sv:v=>`P: ${v} KG`, u:"kg", num:1},
-    {k:"ALTURA", s:"E", sv:v=>`H: ${v} CM`, u:"cm", num:1, c:1},
-    {k:"IMC", s:"E", sv:v=>`IMC: ${v}`, calc:"IMC"},
-    {k:"PA", s:"E", sv:v=>`PA: ${v} MMHG`, u:"mmHg", ph:"120x70"},
-    {k:"AU", s:"E", grp:"ob", sv:v=>`UF: ${v} CM`, u:"cm", num:1},
-    {k:"BCF", s:"E", grp:"ob", sv:v=>`BCF: ${v} BPM`, u:"bpm", num:1},
-    {k:"EDEMA", s:"E", grp:"ob", sv:v=>`EDEMA: ${v}`, one:["AUSENTE","+/4","++/4","+++/4"]},
-    {k:"MOVIMENTOS FETAIS", s:"E", grp:"ob", sv:v=>`MOV. FETAIS: ${v}`, one:["PRESENTES","DIMINUÍDOS","AUSENTES"]},
-    {k:"APRESENTAÇÃO", s:"E", grp:"ob", sv:v=>`APRESENTAÇÃO: ${v}`, one:["CEFÁLICO","PÉLVICO","TRANSVERSO","NÃO AVALIADO"]},
-    {k:"EF", a:1, s:"E", d:"BEG, HIDRATADA, CORADA.", sep:" ", ch:["BEG, HIDRATADA, CORADA.","ABDOME NORMOTENSO, GRAVÍDICO.","SEM DESACELERAÇÕES AO SONAR.","SEM EDEMA DE MMII","TV: NR","MAMAS SEM ALTERAÇÕES."]},
-    {k:"EXAMES", a:1, s:"X", c:1},
-    {k:"HD", a:1, s:"C", sep:"\n", ch:["GESTAÇÃO DE ALTO RISCO","HAS","HAS CONTROLADA","DMG","DMG CONTROLADO COM DIETA","PRÉ-ECLÂMPSIA","RESTRIÇÃO DE CRESCIMENTO","OLIGODRÂMNIO","3º TRIMESTRE"]},
-    {k:"CD", a:1, s:"C", sep:"\n", ch:["ORIENTO","SOLICITO EXAMES DE 1º TRIMESTRE","SOLICITO EXAMES DE 3º TRIMESTRE","USG OBSTÉTRICO","USG OBSTÉTRICO COM DOPPLER","ECO FETAL","CURVA GLICÊMICA","CURVA PRESSÓRICA DIÁRIA","PROP HELLP BASAL","VACINA DTPA","VACINA VSR","ENCAMINHO À NUTRIÇÃO","INICIAR AAS E CÁLCIO","SUSPENDO AAS","PROGRAMAR PARTO COM 39S","TERMO DE LAQUEADURA"]},
-    {k:"DATA DO RETORNO", s:"C", date:1, quick:[7,14,21,28]}]}
-};
-const SNIPPETS = {
-  ".ef":"BEG, HIDRATADA, CORADA.", ".mamas":"MAMAS SEM ALTERAÇÕES.", ".abd":"ABDOME NORMOTENSO, INDOLOR À PALPAÇÃO.",
-  ".vulva":"VULVA EUTRÓFICA, SEM LESÕES APARENTES.", ".tv":"TV: ÚTERO AVF, COLO COM CONSISTÊNCIA GINECOLÓGICA, ANEXOS LIVRES.",
-  ".ee":"EE: VAGINA TRÓFICA, COLO PLANO, SEM ALTERAÇÕES VISÍVEIS.", ".cto":"COLETO CTO.", ".oriento":"ORIENTO", ".neg":"NEGA",
-  ".retex":"RETORNO COM EXAMES", ".ferida":"FERIDA OPERATÓRIA LIMPA, SECA, SEM SINAIS FLOGÍSTICOS.", ".alta":"ALTA AMBULATORIAL."
-};
-
-/* ---------- texto do prontuário ---------- */
-function cabecalho(p){
-  const l=[]; const idade=idadeDe(p);
-  l.push(`NOME: ${p.nome}`);
-  if(p.sus) l.push(`CARTÃO SUS: ${p.sus}`);
-  if(p.cpf) l.push(`CPF: ${p.cpf}`);
-  if(p.nascimento) l.push(`NASCIMENTO: ${fmtData(p.nascimento)}`);
-  if(idade) l.push(`IDADE: ${idade}`);
-  const pr=[p.procedencia&&`PROCEDÊNCIA: ${p.procedencia}`, p.residencia&&`RESIDÊNCIA: ${p.residencia}`].filter(Boolean).join("   ");
-  if(pr) l.push(pr);
-  if(p.parceria) l.push(`PARCERIA: ${p.parceria}`);
-  if(p.encaminhamento) l.push(`\nMOTIVO DO ENCAMINHAMENTO: ${p.encaminhamento}`);
-  return l.join("\n").toUpperCase();
-}
-function textoConsulta(c){
-  const T=TIPOS[c.tipo]; if(!T) return "";
-  const out=[]; let sec=null; const gr={};
-  for(const f of T.campos){
-    let v=(c.v[f.k]||"").trim(); if(!v||f.hide) continue;
-    if(f.date) v=fmtData(v);
-    if(f.sv){ const g=f.grp||"sv"; if(!gr[g]){gr[g]={i:out.length,p:[]}; out.push("");} gr[g].p.push(f.sv(v,c.v)); continue; }
-    if(f.h){ if(sec!==f.h){ out.push((out.length?"\n":"")+f.h+":"); sec=f.h; } out.push(`${f.k}: ${v}`); }
-    else { sec=null; out.push(`${["EF","HD","CD","HF","QP","HMA"].includes(f.k)?"\n":""}${f.k}: ${v}`); }
+function paginaHTML(m,vals,o={}){
+  const mm=Math.min(210,297/m.ratio), edit=!!o.edit;
+  const size=(edit||o.fluid)?`width:100%;aspect-ratio:1/${m.ratio}`:`width:${mm}mm;height:${(mm*m.ratio).toFixed(1)}mm`;
+  let h=`<div class="dpage${edit?" edit":""}" style="${size}">`;
+  if(m.img&&!o.semFundo) h+=`<img class="bg" src="${m.img}" alt="">`;
+  else if(!m.img&&m.titulo) h+=`<div class="dtitle">${esc(m.titulo)}</div>`;
+  for(const f of m.campos){
+    h+=`<div class="dfield${o.sel===f.id?" sel":""}" data-id="${f.id}" style="left:${f.x}%;top:${f.y}%;width:${f.w}%;height:${f.h}%;font-size:${(f.fs*100).toFixed(2)}cqw">${esc(vals[f.tipo]||"")}${edit?`<span class="tg">${esc(FTYPES[f.tipo])}</span><i class="hd"></i>`:""}</div>`;
   }
-  for(const g in gr) out[gr[g].i]="\n"+gr[g].p.join("    ");
-  return out.join("\n").replace(/^\n+/,"").toUpperCase();
-}
-const ordenadas = p => [...(p.consultas||[])].sort((a,b)=>a.data.localeCompare(b.data)||(a.criada||"").localeCompare(b.criada||""));
-const tituloC = (c,i) => `${i+1}ª CONSULTA ${fmtData(c.data)} — ${TIPOS[c.tipo]?.nome||c.tipo}`.toUpperCase();
-const perfil = () => { try{ return JSON.parse(localStorage.getItem("perfil")||"{}"); }catch(e){ return {}; } };
-function cabImpressao(){
-  const f=perfil();
-  return `<div class="ph"><div><b>${esc(f.nome||"Prontuário")}</b><br>${esc([f.esp, f.crm&&"CRM "+f.crm].filter(Boolean).join(" · "))}</div><div style="text-align:right">${esc(f.local||"")}<br>${fmtData(hoje())}</div></div>`;
-}
-function assinatura(){ const f=perfil(); return `<div class="sig"><div></div>${esc(f.nome||"")}${f.crm?" · CRM "+esc(f.crm):""}</div>`; }
-function prontuarioHTML(p, soUma){
-  const cs=ordenadas(p); let h=cabImpressao()+`<div class="pp">${esc(cabecalho(p))}</div>`;
-  cs.forEach((c,i)=>{ if(soUma&&c.id!==soUma) return; h+=`<h3>${esc(tituloC(c,i))}</h3><div class="rec">${esc(textoConsulta(c))}</div>`; });
-  return h+assinatura();
-}
-function prontuarioDocHTML(p){
-  let h=`<html><body style="font-family:Arial;font-size:10.5pt"><h2 style="color:#0e7c86">PRONTUÁRIO</h2><p style="background:#f1f5f7;padding:6pt">${esc(cabecalho(p)).replace(/\n/g,"<br>")}</p>`;
-  ordenadas(p).forEach((c,i)=>{ h+=`<h3 style="background:#e3f4f5;border-left:4pt solid #0e7c86;padding:3pt 6pt">${esc(tituloC(c,i))}</h3><p style="font-family:Courier New;font-size:10pt">${esc(textoConsulta(c)).replace(/\n/g,"<br>")}</p>`; });
-  return h+"</body></html>";
-}
-
-/* ---------- armazenamento ---------- */
-let store, idx={pacientes:[],agenda:[]}; const cachePac={};
-const DemoStore={
-  async init(){}, async loadIndex(){ return JSON.parse(localStorage.getItem("demo_idx")||'{"pacientes":[],"agenda":[]}'); },
-  async loadAux(n){ return JSON.parse(localStorage.getItem("demo_aux_"+n)||"null"); },
-  async saveAux(n,o){ localStorage.setItem("demo_aux_"+n,JSON.stringify(o)); },
-  async saveIndex(i){ localStorage.setItem("demo_idx",JSON.stringify(i)); },
-  async loadPatient(id){ return JSON.parse(localStorage.getItem("demo_p_"+id)); },
-  async savePatient(p){ localStorage.setItem("demo_p_"+p.id,JSON.stringify(p)); },
-  async deletePatient(p){ localStorage.removeItem("demo_p_"+p.id); }
-};
-const DriveStore={
-  token:null, exp:0, rootId:null, idxFile:null, tc:null,
-  async init(){
-    await new Promise((res,rej)=>{ const t=setInterval(()=>{ if(window.google?.accounts?.oauth2){clearInterval(t);res();} },100);
-      setTimeout(()=>{clearInterval(t);rej(new Error("Biblioteca Google não carregou"));},10000); });
-    this.tc=google.accounts.oauth2.initTokenClient({client_id:CFG.GOOGLE_CLIENT_ID,scope:"https://www.googleapis.com/auth/drive.file openid email profile",callback:()=>{}});
-    await this.auth(true);
-    this.user=await (await fetch("https://www.googleapis.com/oauth2/v3/userinfo",{headers:{Authorization:"Bearer "+this.token}})).json();
-    this.rootId=await this.pasta(CFG.PASTA_RAIZ,null);
-  },
-  auth(consent){ return new Promise((res,rej)=>{
-    this.tc.callback=r=>{ if(r.error) rej(new Error(r.error)); else { this.token=r.access_token; this.exp=Date.now()+(r.expires_in-60)*1000; res(); } };
-    this.tc.error_callback=e=>rej(new Error(e.type||"auth"));
-    this.tc.requestAccessToken({prompt:consent?"select_account":""}); }); },
-  async api(url,opt={}){
-    if(Date.now()>this.exp) await this.auth(false);
-    const r=await fetch(url,{...opt,headers:{Authorization:"Bearer "+this.token,...(opt.headers||{})}});
-    if(!r.ok) throw new Error("Drive "+r.status+": "+(await r.text()).slice(0,200));
-    return r;
-  },
-  async pasta(nome,pai){
-    const q=`name='${nome.replace(/'/g,"\\'")}' and mimeType='application/vnd.google-apps.folder' and trashed=false`+(pai?` and '${pai}' in parents`:"");
-    const l=await (await this.api("https://www.googleapis.com/drive/v3/files?q="+encodeURIComponent(q)+"&fields=files(id)")).json();
-    if(l.files.length) return l.files[0].id;
-    return (await (await this.api("https://www.googleapis.com/drive/v3/files?fields=id",{method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({name:nome,mimeType:"application/vnd.google-apps.folder",parents:pai?[pai]:undefined})})).json()).id;
-  },
-  async upsert(nome,pai,fileId,tipoMeta,conteudo,tipoMedia){
-    const meta=fileId?{name:nome}:{name:nome,parents:[pai],...(tipoMeta?{mimeType:tipoMeta}:{})}; const b="x"+uid();
-    const body=`--${b}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n--${b}\r\nContent-Type: ${tipoMedia}; charset=UTF-8\r\n\r\n${conteudo}\r\n--${b}--`;
-    const url=fileId?`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart&fields=id`:`https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id`;
-    return (await (await this.api(url,{method:fileId?"PATCH":"POST",headers:{"Content-Type":"multipart/related; boundary="+b},body})).json()).id;
-  },
-  async loadIndex(){
-    const q=`name='indice.json' and '${this.rootId}' in parents and trashed=false`;
-    const l=await (await this.api("https://www.googleapis.com/drive/v3/files?q="+encodeURIComponent(q)+"&fields=files(id)")).json();
-    if(!l.files.length) return {pacientes:[],agenda:[]};
-    this.idxFile=l.files[0].id;
-    return await (await this.api(`https://www.googleapis.com/drive/v3/files/${this.idxFile}?alt=media`)).json();
-  },
-  aux:{},
-  async loadAux(n){
-    const q=`name='${n}' and '${this.rootId}' in parents and trashed=false`;
-    const l=await (await this.api("https://www.googleapis.com/drive/v3/files?q="+encodeURIComponent(q)+"&fields=files(id)")).json();
-    if(!l.files.length) return null; this.aux[n]=l.files[0].id;
-    return await (await this.api(`https://www.googleapis.com/drive/v3/files/${this.aux[n]}?alt=media`)).json();
-  },
-  async saveAux(n,o){ this.aux[n]=await this.upsert(n,this.rootId,this.aux[n],null,JSON.stringify(o),"application/json"); },
-  async saveIndex(i){ this.idxFile=await this.upsert("indice.json",this.rootId,this.idxFile,null,JSON.stringify(i),"application/json"); },
-  async loadPatient(id){ const e=idx.pacientes.find(x=>x.id===id); return await (await this.api(`https://www.googleapis.com/drive/v3/files/${e.jsonId}?alt=media`)).json(); },
-  async savePatient(p){
-    const e=idx.pacientes.find(x=>x.id===p.id)||{};
-    const folderId=e.folderId||await this.pasta(`${p.nome} – ${p.id}`,this.rootId);
-    const jsonId=await this.upsert("paciente.json",folderId,e.jsonId,null,JSON.stringify(p),"application/json");
-    const docId=await this.upsert(`Prontuário – ${p.nome}`,folderId,e.docId,"application/vnd.google-apps.document",prontuarioDocHTML(p),"text/html");
-    p._drive={folderId,jsonId,docId};
-  },
-  async deletePatient(p){ const e=idx.pacientes.find(x=>x.id===p.id);
-    if(e?.folderId) await this.api(`https://www.googleapis.com/drive/v3/files/${e.folderId}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({trashed:true})}); }
-};
-function resumo(p){ const cs=ordenadas(p), u=cs[cs.length-1]; return {id:p.id,nome:p.nome,sus:p.sus,idade:idadeDe(p),ultima:u?.data||"",ultimaTipo:u?.tipo||"",n:cs.length,...(p._drive||{})}; }
-async function gravarPaciente(p){
-  await store.savePatient(p);
-  const r=resumo(p), i=idx.pacientes.findIndex(x=>x.id===p.id); if(i<0) idx.pacientes.push(r); else idx.pacientes[i]=r;
-  cachePac[p.id]=p; await store.saveIndex(idx);
-}
-async function getPaciente(id){ return cachePac[id] ||= await store.loadPatient(id); }
-
-/* ---------- navegação ---------- */
-let view="hoje"; const page=$("#page");
-const NAV={hoje:["home","Hoje"],pacientes:["users","Pacientes"],agenda:["cal","Agenda"],modelos:["file","Modelos"],perfil:["user","Meu perfil"]};
-$$("aside a[data-v]").forEach(a=>{ const [i,t]=NAV[a.dataset.v]; a.innerHTML=lab(i,t); a.onclick=()=>nav(a.dataset.v); });
-$("#sair").innerHTML=lab("out","Sair"); $("#icSearch").innerHTML=ic("search"); $("#topNovo").innerHTML=lab("plus","Novo paciente");
-$("#topNovo").onclick=()=>formPaciente();
-$("#gsearch").addEventListener("keydown",e=>{ if(e.key==="Enter"){ nav("pacientes",e.target.value); e.target.value=""; } });
-document.addEventListener("keydown",e=>{ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="k"){ e.preventDefault(); $("#gsearch").focus(); } });
-function nav(v,arg){ view=v; $$("aside a[data-v]").forEach(a=>a.classList.toggle("on",a.dataset.v===v)); window.scrollTo(0,0);
-  ({hoje:telaHoje,pacientes:telaPacientes,agenda:telaAgenda,modelos:telaModelos,perfil:telaPerfil})[v](arg); }
-
-function nomeP(id){ return idx.pacientes.find(p=>p.id===id)?.nome||"?"; }
-function linhaP(p,extra=""){ return `<div class="li" data-id="${p.id}"><div class="av" style="background:${cor(p.nome)}">${iniciais(p.nome)}</div>
-  <div class="sp"><div class="n">${esc(p.nome)}</div><div class="m">${[p.idade&&p.idade+" anos",p.sus&&"SUS "+p.sus].filter(Boolean).join(" · ")}</div></div>${extra}</div>`; }
-
-function telaHoje(){
-  const h=hoje(), ag=idx.agenda.filter(a=>a.data===h).sort((a,b)=>a.hora.localeCompare(b.hora));
-  const prox=idx.agenda.filter(a=>a.data>h&&diasEntre(h,a.data)<=7).length;
-  const rec=[...idx.pacientes].filter(p=>p.ultima).sort((a,b)=>b.ultima.localeCompare(a.ultima)).slice(0,6);
-  const f=perfil(); const hora=new Date().getHours();
-  page.innerHTML=`<h2>${hora<12?"Bom dia":hora<18?"Boa tarde":"Boa noite"}${f.nome?", "+esc(f.nome.split(" ").slice(0,2).join(" ")):""}</h2>
-    <p class="mut" style="margin:2px 0 18px">${new Date().toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long"})}</p>
-    <div class="stats"><div class="stat p"><span>Consultas hoje</span><b>${ag.length}</b></div>
-      <div class="stat"><span>Próximos 7 dias</span><b>${prox}</b></div><div class="stat"><span>Pacientes cadastrados</span><b>${idx.pacientes.length}</b></div></div>
-    <div class="cols"><div>
-      <div class="card"><h3>${ic("clock")} Agenda de hoje</h3>
-      ${ag.map(a=>`<div class="li" data-ag="${a.id}"><div class="av" style="background:var(--t-${a.tipo})">${a.hora}</div>
-        <div class="sp"><div class="n">${esc(nomeP(a.pid))}</div><div class="m">${esc(TIPOS[a.tipo]?.nome||"")} ${esc(a.obs||"")}</div></div>
-        <button class="btn sm">Iniciar consulta</button></div>`).join("")||`<div class="empty">Nenhuma consulta agendada para hoje.<br><a href="#" id="goAg">Agendar paciente</a></div>`}</div>
-      <div class="card"><h3>${ic("users")} Atendidos recentemente</h3>${rec.map(p=>linhaP(p,`<span class="tag">${fmtData(p.ultima)}</span>`)).join("")||`<div class="empty">Ainda sem atendimentos.</div>`}</div></div>
-      <div><div class="card"><h3>Atalhos</h3><div class="row" style="flex-direction:column;align-items:stretch">
-        <button class="btn" id="sc1">${lab("plus","Novo paciente")}</button><button class="btn sec" id="sc2">${lab("cal","Agendar consulta")}</button>
-        <button class="btn sec" id="sc3">${lab("users","Ver pacientes")}</button></div></div>
-      <div class="card"><h3>Dicas</h3><p class="hint" style="margin:0">Digite <b>.ef</b> + espaço em qualquer campo para inserir o exame físico normal. Use <b>Ctrl+S</b> para salvar a consulta e <b>Ctrl+K</b> para buscar pacientes.</p></div></div></div>`;
-  $("#sc1").onclick=()=>formPaciente(); $("#sc2").onclick=()=>nav("agenda"); $("#sc3").onclick=()=>nav("pacientes");
-  if($("#goAg")) $("#goAg").onclick=e=>{e.preventDefault();nav("agenda");};
-  $$(".li[data-id]",page).forEach(el=>el.onclick=()=>telaPaciente(el.dataset.id));
-  $$(".li[data-ag]",page).forEach(el=>el.onclick=async()=>{ const a=idx.agenda.find(x=>x.id===el.dataset.ag); formConsulta(await getPaciente(a.pid),null,a.tipo); });
-}
-
-function telaPacientes(busca=""){
-  const b=(busca||"").toLowerCase();
-  const l=idx.pacientes.filter(p=>!b||p.nome.toLowerCase().includes(b)||(p.sus||"").includes(b)).sort((a,b)=>a.nome.localeCompare(b.nome));
-  page.innerHTML=`<div class="row between" style="margin-bottom:16px"><h2>Pacientes <span class="tag">${idx.pacientes.length}</span></h2><button class="btn" id="novoP">${lab("plus","Novo paciente")}</button></div>
-   <div class="card"><input id="busca" placeholder="Filtrar por nome ou Cartão SUS" value="${esc(busca)}" style="margin-bottom:8px">
-   ${l.map(p=>linhaP(p,`<span class="tag">${p.n||0} consulta${p.n===1?"":"s"}</span>${p.ultimaTipo?`<span class="tag" style="color:var(--t-${p.ultimaTipo})">${esc(TIPOS[p.ultimaTipo]?.curto||"")} · ${fmtData(p.ultima)}</span>`:""}`)).join("")||`<div class="empty">Nenhum paciente encontrado.</div>`}</div>`;
-  $("#busca").oninput=e=>{ const v=e.target.value; telaPacientes(v); const i=$("#busca"); i.focus(); i.setSelectionRange(v.length,v.length); };
-  $("#novoP").onclick=()=>formPaciente();
-  $$(".li[data-id]",page).forEach(el=>el.onclick=()=>telaPaciente(el.dataset.id));
-}
-
-function formPaciente(p){
-  const n=!p; p=p||{};
-  const f=(k,l,x="",t="text")=>`<div><label>${l}</label><input ${t==="text"?'class="up"':""} type="${t}" id="f_${k}" value="${esc(p[k]||"")}" ${x}></div>`;
-  const opt=["cpf","procedencia","residencia","parceria","contatoEmerg","encaminhamento","obs"].some(k=>p[k]);
-  page.innerHTML=`<div class="row between" style="margin-bottom:16px"><h2>${n?"Novo paciente":"Editar paciente"}</h2></div>
-   <div class="card"><h3>${ic("user")} Dados essenciais</h3><div class="grid">
-     ${f("nome","Nome completo *")}${f("nascimento","Data de nascimento","","date")}${f("sus","Cartão SUS","inputmode=\"numeric\" placeholder=\"15 dígitos\"")}${f("telefone","Telefone / WhatsApp","inputmode=\"tel\" placeholder=\"(79) 99999-9999\"")}</div>
-     <p class="hint" id="idadeAuto" style="margin:8px 0 0"></p></div>
-   <details class="card" ${opt?"open":""}><summary style="cursor:pointer;font-weight:600">Mais dados <span class="mut" style="font-weight:400">(opcional)</span></summary>
-     <div class="grid">${f("cpf","CPF","inputmode=\"numeric\"")}${f("procedencia","Procedência (unidade ou município)")}${f("residencia","Residência (bairro)")}${f("parceria","Parceria / estado civil")}
-     ${f("contatoEmerg","Contato de emergência (nome e telefone)")}${f("encaminhamento","Motivo do encaminhamento")}</div>
-     <label>Observações</label><textarea id="f_obs">${esc(p.obs||"")}</textarea></details>
-   <div class="row"><button class="btn" id="ok">${lab("save","Salvar paciente")}</button><button class="btn sec" id="cancel">Cancelar</button></div>`;
-  const idadeAuto=()=>{ const v=$("#f_nascimento").value; $("#idadeAuto").textContent=v?`Idade: ${idadeDe({nascimento:v})} anos`:""; };
-  $("#f_nascimento").oninput=idadeAuto; idadeAuto(); $("#f_nome").focus();
-  $("#cancel").onclick=()=>n?nav("pacientes"):telaPaciente(p.id);
-  $("#ok").onclick=async()=>{
-    const q={...p}; ["nome","sus","cpf","procedencia","residencia","parceria","telefone","contatoEmerg","encaminhamento","obs"].forEach(k=>q[k]=$("#f_"+k).value.trim().toUpperCase());
-    q.nascimento=$("#f_nascimento").value; if(!q.nome) return toast("Informe o nome.");
-    q.sus=q.sus.replace(/\D/g,""); q.cpf=q.cpf.replace(/\D/g,"");
-    if(q.sus&&q.sus.length!==15&&!confirm(`O Cartão SUS tem ${q.sus.length} dígitos (o esperado são 15). Salvar assim mesmo?`)) return;
-    if(q.cpf&&q.cpf.length!==11&&!confirm(`O CPF tem ${q.cpf.length} dígitos (o esperado são 11). Salvar assim mesmo?`)) return;
-    const nn=s=>s.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/\s+/g," ").trim();
-    const dup=idx.pacientes.find(x=>x.id!==q.id&&((q.sus&&x.sus===q.sus)||nn(x.nome)===nn(q.nome)));
-    if(dup&&!confirm(`Já existe um paciente parecido: ${dup.nome}${dup.sus?" (SUS "+dup.sus+")":""}. Salvar mesmo assim?`)) return;
-    q.id||=uid(); q.consultas||=[]; $("#ok").disabled=true;
-    try{ await gravarPaciente(q); toast("Paciente salvo."); telaPaciente(q.id); }catch(e){ toast("Erro: "+e.message); $("#ok").disabled=false; }
-  };
-}
-
-function resumoClinico(p){
-  const cs=ordenadas(p).reverse(), g=k=>cs.find(c=>c.v[k]&&c.v[k].trim())?.v[k].trim()||"";
-  return {alergias:g("ALERGIAS"), comorb:g("COMORBIDADES"), meds:g("MEDICAMENTOS"), hd:cs.find(c=>c.v.HD)?.v.HD||"", cd:cs.find(c=>c.v.CD)?.v.CD||""};
-}
-
-async function telaPaciente(id){
-  page.innerHTML=`<p class="mut">Carregando…</p>`;
-  let p; try{ p=await getPaciente(id); }catch(e){ return page.innerHTML=`<p>Erro: ${esc(e.message)}</p>`; }
-  const e=idx.pacientes.find(x=>x.id===id), cs=ordenadas(p), r=resumoClinico(p), idade=idadeDe(p);
-  const alerg=r.alergias&&!/^nega/i.test(r.alergias);
-  const tagsC=r.comorb&&!/^nega$/i.test(r.comorb)?r.comorb.split(/\s*,\s*/).filter(x=>x&&!/^nega$/i.test(x)).map(x=>`<span class="tag warn">${esc(x)}</span>`).join(""):"";
-  const tel=(p.telefone||"").replace(/\D/g,""), zap=tel.length>=10?`<a class="tag" target="_blank" rel="noopener" style="text-decoration:none" href="https://wa.me/${tel.length<=11?"55"+tel:tel}">WhatsApp ${esc(p.telefone)}</a>`:(p.telefone?`<span class="tag">${esc(p.telefone)}</span>`:"");
-  const pn=[...cs].reverse().find(c=>c.tipo==="prenatal"&&c.v.DUM); let gest="";
-  if(pn){ const d=diasEntre(pn.v.DUM,hoje()); if(d>=0&&d<=300){
-    gest=`<span class="tag pri" style="background:rgba(255,255,255,.2);color:#fff">Gestante · IG hoje ${fmtIG(d)} · DPP ${fmtData(somaDias(pn.v.DUM,280))}</span>`+(pn.v.RISCO==="ALTO RISCO"?`<span class="tag err">Alto risco</span>`:""); } }
-  page.innerHTML=`<div class="row" style="margin-bottom:10px"><button class="btn ghost sm" id="voltar">${lab("back","Pacientes")}</button></div>
-  <div class="banner"><div class="av">${iniciais(p.nome)}</div>
-    <div style="flex:1;min-width:220px"><h2>${esc(p.nome)}</h2><div class="sub">${[idade&&idade+" anos",p.sus&&"SUS "+esc(p.sus),p.procedencia,p.residencia].filter(Boolean).join(" · ")}</div>
-    ${p.encaminhamento?`<div class="sub">Encaminhamento: ${esc(p.encaminhamento)}</div>`:""}
-    <div class="row" style="margin-top:8px;gap:6px">${gest}${zap}${alerg?`<span class="tag err">${ic("alert")} Alergia: ${esc(r.alergias)}</span>`:""}${tagsC}</div></div>
-    <div class="row"><button class="btn sec sm" id="edP">${lab("edit","Editar")}</button><button class="btn sec sm" id="imp">${lab("print","Imprimir tudo")}</button>
-    ${e?.docId?`<a class="btn sec sm" target="_blank" rel="noopener" href="https://docs.google.com/document/d/${e.docId}/edit">${lab("ext","Drive")}</a>`:""}</div></div>
-  <div class="cols"><div>
-    <div class="card"><h3>${ic("plus")} Nova consulta</h3><div class="tiles">
-     ${Object.entries(TIPOS).map(([k,t])=>`<button class="tile" style="--c:var(--t-${k})" data-t="${k}" ${t.off?"disabled":""}><b>${t.nome}</b><small>${t.sub}</small></button>`).join("")}</div></div>
-    <div class="card"><h3>${ic("print")} Documentos</h3><div class="row">
-     <button class="btn sec" id="dEx">${lab("plus","Pedido de exames")}</button><button class="btn sec" id="dRe">${lab("plus","Receita")}</button></div>
-     ${(p.docs||[]).length?`<div style="margin-top:10px">${[...p.docs].reverse().slice(0,5).map(d=>`<div class="li" data-doc="${d.id}"><div class="sp"><div class="n">${d.tipo==="receita"?"Receita":"Pedido de exames"}</div><div class="m">${fmtData(d.data)} · ${esc(d.modelo)}</div></div>${ic("print")}</div>`).join("")}</div>`:""}</div>
-    <div class="card"><h3>${ic("file")} Histórico <span class="tag">${cs.length}</span></h3><div class="tl">
-     ${[...cs].reverse().map(c=>{ const i=cs.indexOf(c); return `<div class="ev" style="--c:var(--t-${c.tipo})"><div class="h" data-o="1"><b>${fmtData(c.data)}</b><span class="tag" style="color:var(--t-${c.tipo})">${esc(TIPOS[c.tipo]?.nome||c.tipo)}</span>
-       <span class="mut" style="flex:1;font-size:13px">${esc((c.v.HD||"").split("\n")[0])}</span>
-       <button class="btn ghost sm" data-e="${c.id}">${ic("edit")}</button><button class="btn ghost sm" data-p="${c.id}">${ic("print")}</button></div>
-       <div class="body"><div class="rec">${esc(textoConsulta(c))}</div></div></div>`; }).join("")||`<div class="empty">Nenhuma consulta ainda. Escolha um tipo acima.</div>`}</div></div>
-  </div><div>
-    <div class="card"><h3>Resumo clínico</h3>
-      <div class="kv"><b>Alergias</b>${esc(r.alergias||"—")}</div><div class="kv"><b>Comorbidades</b>${esc(r.comorb||"—")}</div>
-      <div class="kv"><b>Medicamentos</b>${esc(r.meds||"—")}</div><div class="kv"><b>Último diagnóstico</b><span style="white-space:pre-wrap">${esc(r.hd||"—")}</span></div>
-      <div class="kv"><b>Última conduta</b><span style="white-space:pre-wrap">${esc(r.cd||"—")}</span></div>
-      ${p.contatoEmerg?`<div class="kv"><b>Contato de emergência</b>${esc(p.contatoEmerg)}</div>`:""}
-      ${p.obs?`<div class="kv"><b>Observações</b><span style="white-space:pre-wrap">${esc(p.obs)}</span></div>`:""}</div>
-    <button class="btn danger sm" id="delP">${lab("trash","Excluir paciente")}</button>
-  </div></div>`;
-  $("#voltar").onclick=()=>nav("pacientes"); $("#edP").onclick=()=>formPaciente(p); $("#imp").onclick=()=>imprimir(prontuarioHTML(p));
-  $("#delP").onclick=async()=>{ if(!confirm(`Excluir ${p.nome}? No Drive a pasta vai para a lixeira.`)) return;
-    await store.deletePatient(p); idx.pacientes=idx.pacientes.filter(x=>x.id!==id); idx.agenda=idx.agenda.filter(a=>a.pid!==id); delete cachePac[id]; await store.saveIndex(idx); nav("pacientes"); };
-  $("#dEx").onclick=()=>telaDocumento(p,"exames"); $("#dRe").onclick=()=>telaDocumento(p,"receita");
-  $$("[data-doc]",page).forEach(el=>el.onclick=()=>reimprimirDoc(p,el.dataset.doc));
-  $$("[data-t]",page).forEach(b=>b.onclick=()=>formConsulta(p,null,b.dataset.t));
-  $$("[data-e]",page).forEach(b=>b.onclick=ev=>{ ev.stopPropagation(); formConsulta(p,p.consultas.find(c=>c.id===b.dataset.e)); });
-  $$("[data-p]",page).forEach(b=>b.onclick=ev=>{ ev.stopPropagation(); imprimir(prontuarioHTML(p,b.dataset.p)); });
-  $$("[data-o]",page).forEach(h=>h.onclick=()=>h.parentElement.classList.toggle("open"));
-}
-
-/* ---------- formulário de consulta ---------- */
-const SPLIT={", ":/\s*,\s*/,"\n":/\n/," ":/(?<=\.)\s+/}, JOIN={", ":", ","\n":"\n"," ":" "};
-const itens=(v,sep)=>v.split(SPLIT[sep]).map(x=>x.trim()).filter(Boolean);
-
-function campoHTML(f,val){
-  const k=esc(f.k), ph=f.ph?`placeholder="${esc(f.ph)}"`:"";
-  let h=`<div${f.sv?' class="svf"':""}><label>${esc(f.lbl||f.k)}${f.u?` <span style="text-transform:none;font-weight:400">(${f.u})</span>`:""}</label>`;
-  if(f.ch&&!f.sv) h+=`<div class="chips" data-for="${k}">${f.ch.map(c=>`<span class="chip" data-c="${esc(c)}">${esc(c.length>34?c.slice(0,32)+"…":c)}</span>`).join("")}</div>`;
-  if(f.one) h+=`<div class="chips" data-one="${k}">${f.one.map(c=>`<span class="chip" data-c="${esc(c)}">${esc(c)}</span>`).join("")}</div><input type="hidden" data-k="${k}" value="${esc(val)}">`;
-  else if(f.calc) h+=`<input class="calc" data-k="${k}" data-calc="${f.calc}" readonly value="${esc(val)}">`;
-  else if(f.date) h+=`<input type="date" data-k="${k}" value="${esc(val)}" style="max-width:220px">`+(f.quick?`<div class="chips" style="margin:7px 0 0">${f.quick.map(n=>`<span class="chip" data-q="${n}">+${n/7} sem</span>`).join("")}</div>`:"");
-  else if(f.a) h+=`<textarea data-k="${k}" ${ph}>${esc(val)}</textarea>`;
-  else h+=`<input class="up" data-k="${k}" ${f.num?'inputmode="decimal"':""} ${ph} value="${esc(val)}">`;
-  if(VAL[f.k]) h+=`<div class="warnmsg" data-w="${k}"></div>`;
   return h+`</div>`;
 }
 
-function formConsulta(p,c,tipo){
-  const n=!c; tipo=c?c.tipo:tipo; const T=TIPOS[tipo];
-  let copiou=false;
-  if(n){
-    c={id:uid(),tipo,data:hoje(),criada:new Date().toISOString(),v:{}};
-    const prev=ordenadas(p).reverse();
-    for(const f of T.campos){
-      let val=f.d||"";
-      if(f.c){ const q=prev.find(x=>(x.v[f.k]||"").trim()); if(q){ val=q.v[f.k]; copiou=true; } }
-      if(f.from){ const q=prev.find(x=>(x.v[f.from]||"").trim()); if(q) val=q.v[f.from]; }
-      c.v[f.k]=val;
-    }
+/* ---------- lista de modelos ---------- */
+async function telaModelos(){
+  page.innerHTML=`<p class="mut">Carregando…</p>`;
+  const ms=await getModelos();
+  page.innerHTML=`<div class="row between" style="margin-bottom:16px"><h2>Modelos de documentos</h2>
+    <button class="btn" id="mNovo">${lab("plus","Novo modelo a partir de foto")}</button></div>
+    <p class="mut" style="margin-top:-6px">Fotografe ou escaneie o pedido de exames ou a receita da sua unidade. O sistema usa a imagem como fundo e preenche os campos nos lugares certos na hora de imprimir.</p>
+    <div class="mgrid">${ms.map(m=>`<div class="mcard"><div class="th">${paginaHTML(m,AMOSTRA,{fluid:true})}</div>
+      <div><b>${esc(m.nome)}</b><br><span class="tag ${m.tipo==="receita"?"pri":"warn"}">${m.tipo==="receita"?"Receita":m.tipo==="exames"?"Pedido de exames":"Outro"}</span> ${m.padrao?`<span class="tag">padrão</span>`:""}</div>
+      <div class="row"><button class="btn sec sm" data-ed="${m.id}">${lab("edit",m.padrao?"Personalizar":"Editar")}</button>
+      ${m.padrao?"":`<button class="btn danger sm" data-del="${m.id}">${ic("trash")}</button>`}</div></div>`).join("")}</div>`;
+  $("#mNovo").onclick=()=>editorModelo(null);
+  $$("[data-ed]",page).forEach(b=>b.onclick=()=>editorModelo(ms.find(m=>m.id===b.dataset.ed)));
+  $$("[data-del]",page).forEach(b=>b.onclick=async()=>{ if(!confirm("Excluir este modelo?")) return;
+    MOD=MOD.filter(m=>m.id!==b.dataset.del); await store.saveAux("modelos.json",MOD); telaModelos(); });
+}
+
+/* ---------- imagem ---------- */
+function carregarImg(src){ return new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=src; }); }
+async function pdfParaCanvas(file){
+  if(!window.pdfjsLib){
+    await new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"; sc.onload=res; sc.onerror=()=>rej(new Error("Leitor de PDF indisponível")); document.head.appendChild(sc); });
+    pdfjsLib.GlobalWorkerOptions.workerSrc=URL.createObjectURL(new Blob(['importScripts("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js");'],{type:"text/javascript"}));
   }
-  // agrupar por seção (mantendo ordem), SV em grade
-  const secs=[]; for(const f of T.campos){ let s=secs.find(x=>x.s===f.s); if(!s) secs.push(s={s:f.s,f:[]}); s.f.push(f); }
-  const body=secs.map(s=>{
-    let inner="", hAt=null, svb="";
-    for(const f of s.f){
-      if(f.sv&&!f.one){ svb+=campoHTML(f,c.v[f.k]||""); continue; }
-      if(f.h&&f.h!==hAt){ inner+=`<div class="hint" style="margin-top:16px;font-weight:600;color:var(--pri)">${f.h}</div>`; } hAt=f.h||null;
-      inner+=campoHTML(f,c.v[f.k]||"");
-    }
-    if(svb) inner=`<div class="sv">${svb}</div>`+inner;
-    return `<div class="card"><h3>${S[s.s]}</h3>${inner}</div>`;
-  }).join("");
-  const info=ordenadas(p).length&&copiou?`<div class="note">Campos de histórico foram copiados da consulta anterior. Confira antes de salvar.</div>`:"";
-  page.innerHTML=`<div class="cbar"><button class="btn ghost sm" id="cancel">${lab("back","Voltar")}</button>
-    <h2>${esc(T.nome)} <span class="mut" style="font-weight:400">· ${esc(p.nome)}</span></h2>
-    <input type="date" id="cdata" value="${c.data}" style="width:160px">
-    ${n?"":`<button class="btn danger sm" id="del">${lab("trash","Excluir")}</button>`}
-    <button class="btn" id="ok">${lab("save","Salvar consulta")}</button></div>
-    ${info}
-    <div class="cgrid"><div id="fields">${body}<p class="hint">Atalhos de texto (digite e aperte espaço): ${Object.keys(SNIPPETS).join("  ")}</p></div>
-    <div class="prev card"><h3>${ic("file")} Prévia do prontuário</h3><div class="rec" id="prev"></div></div></div>`;
-  const root=$("#fields");
-  const val=()=>{ const v={}; $$("[data-k]",root).forEach(el=>v[el.dataset.k]=el.value); return v; };
-  const sync=()=>{
-    const v=val(); const cc={data:$("#cdata").value||c.data}; v.__data=cc.data;
-    $$("[data-calc]",root).forEach(el=>{ el.value=CALC[el.dataset.calc](v,cc); v[el.dataset.k]=el.value; });
-    $$(".chips[data-for]",root).forEach(w=>{ const f=T.campos.find(x=>x.k===w.dataset.for), el=$(`[data-k="${CSS.escape(f.k)}"]`,root), it=itens(el.value,f.sep||", ");
-      $$(".chip",w).forEach(ch=>ch.classList.toggle("on",it.includes(ch.dataset.c))); });
-    $$(".chips[data-one]",root).forEach(w=>{ const el=$(`[data-k="${CSS.escape(w.dataset.one)}"]`,root); $$(".chip",w).forEach(ch=>ch.classList.toggle("on",ch.dataset.c===el.value)); });
-    $$("[data-w]",root).forEach(w=>{ w.textContent=VAL[w.dataset.w](v[w.dataset.w]||"",v)||""; });
-    delete v.__data;
-    $("#prev").textContent=textoConsulta({tipo,v})||"Preencha os campos para ver a prévia.";
-  };
-  root.addEventListener("input",ev=>{
-    const el=ev.target;
-    if(el.matches("textarea,input.up")){ const m=el.value.slice(0,el.selectionStart).match(/(\.[a-z0-9]+) $/i);
-      if(m&&SNIPPETS[m[1].toLowerCase()]){ const pos=el.selectionStart, ini=pos-m[0].length, rep=SNIPPETS[m[1].toLowerCase()]+" ";
-        el.value=el.value.slice(0,ini)+rep+el.value.slice(pos); el.setSelectionRange(ini+rep.length,ini+rep.length); } }
-    sync();
-  });
-  $("#cdata").addEventListener("input",sync);
-  root.addEventListener("click",ev=>{
-    const ch=ev.target.closest(".chip"); if(!ch) return;
-    if(ch.dataset.q){ const el=ch.parentElement.previousElementSibling; el.value=somaDias($("#cdata").value||c.data,+ch.dataset.q); sync(); return; }
-    const w=ch.parentElement, ph=ch.dataset.c;
-    if(w.dataset.one){ const el=$(`[data-k="${CSS.escape(w.dataset.one)}"]`,root); el.value=el.value===ph?"":ph; sync(); return; }
-    const f=T.campos.find(x=>x.k===w.dataset.for), sep=f.sep||", ", el=$(`[data-k="${CSS.escape(f.k)}"]`,root);
-    let it=itens(el.value,sep); it=it.includes(ph)?it.filter(x=>x!==ph):[...it,ph]; el.value=it.join(JOIN[sep]); sync();
-  });
-  sync();
-  const salvar=async()=>{
-    c.data=$("#cdata").value||hoje(); const v=val(); c.v=v; if(n) p.consultas.push(c);
-    $("#ok").disabled=true; $("#ok").lastChild.textContent="Salvando…";
-    try{ await gravarPaciente(p);
-      const rd=c.v["DATA DO RETORNO"]; let ag="";
-      if(rd&&!idx.agenda.some(a=>a.pid===p.id&&a.data===rd)){ idx.agenda.push({id:uid(),pid:p.id,data:rd,hora:"08:00",tipo:tipo==="cir_pre"?"cir_pos":tipo==="gin_primeira"?"gin_retorno":tipo,obs:"Retorno"}); await store.saveIndex(idx); ag=` Retorno agendado para ${fmtData(rd)}.`; }
-      toast("Consulta salva"+(store===DriveStore?" no Drive.":".")+ag); telaPaciente(p.id); }
-    catch(e){ if(n) p.consultas=p.consultas.filter(x=>x.id!==c.id); toast("Erro ao salvar: "+e.message); $("#ok").disabled=false; $("#ok").lastChild.textContent="Salvar consulta"; }
-  };
-  $("#ok").onclick=salvar;
-  page.onkeydown=e=>{ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="s"){ e.preventDefault(); salvar(); } };
-  $("#cancel").onclick=()=>{ page.onkeydown=null; telaPaciente(p.id); };
-  if($("#del")) $("#del").onclick=async()=>{ if(!confirm("Excluir esta consulta?")) return; p.consultas=p.consultas.filter(x=>x.id!==c.id); await gravarPaciente(p); telaPaciente(p.id); };
+  const doc=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise, pg=await doc.getPage(1), vp0=pg.getViewport({scale:1}), vp=pg.getViewport({scale:1500/vp0.width});
+  const c=document.createElement("canvas"); c.width=Math.round(vp.width); c.height=Math.round(vp.height);
+  const x=c.getContext("2d"); x.fillStyle="#fff"; x.fillRect(0,0,c.width,c.height);
+  await pg.render({canvasContext:x,viewport:vp}).promise; return c;
+}
+async function arquivoParaImg(file){
+  if(file.type==="application/pdf"||/\.pdf$/i.test(file.name||"")) return pdfParaCanvas(file);
+  const src=await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); });
+  const im=await carregarImg(src), s=Math.min(1,1500/im.width), c=document.createElement("canvas");
+  c.width=Math.round(im.width*s); c.height=Math.round(im.height*s); c.getContext("2d").drawImage(im,0,0,c.width,c.height);
+  return c;
+}
+const canvasParaUrl = c => c.toDataURL("image/jpeg",.8);
+async function girarImg(url,graus){
+  const im=await carregarImg(url), c=document.createElement("canvas"), r=Math.abs(graus)===90;
+  c.width=r?im.height:im.width; c.height=r?im.width:im.height; const x=c.getContext("2d");
+  x.translate(c.width/2,c.height/2); x.rotate(graus*Math.PI/180); x.drawImage(im,-im.width/2,-im.height/2); return c;
+}
+async function melhorarImg(url){
+  const im=await carregarImg(url), c=document.createElement("canvas"); c.width=im.width; c.height=im.height;
+  const x=c.getContext("2d"); x.drawImage(im,0,0); const d=x.getImageData(0,0,c.width,c.height), a=d.data, hist=new Array(256).fill(0);
+  for(let i=0;i<a.length;i+=4){ const g=(a[i]*.3+a[i+1]*.59+a[i+2]*.11)|0; a[i]=a[i+1]=a[i+2]=g; hist[g]++; }
+  const tot=c.width*c.height; let lo=0,hi=255,s=0; for(;lo<255;lo++){ s+=hist[lo]; if(s>tot*.02) break; } s=0; for(;hi>0;hi--){ s+=hist[hi]; if(s>tot*.25) break; }
+  hi=Math.max(hi,lo+40);
+  for(let i=0;i<a.length;i+=4){ const v=Math.max(0,Math.min(255,(a[i]-lo)*255/(hi-lo))); a[i]=a[i+1]=a[i+2]=v; }
+  x.putImageData(d,0,0); return c;
 }
 
-/* ---------- agenda e perfil ---------- */
-function telaAgenda(){
-  const h=hoje(), l=[...idx.agenda].filter(a=>a.data>=h).sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora));
-  const dias=[...new Set(l.map(a=>a.data))];
-  page.innerHTML=`<h2 style="margin-bottom:16px">Agenda</h2>
-   <div class="card"><h3>${ic("plus")} Agendar consulta</h3><div class="grid">
-    <div><label>Paciente</label><select id="a_p">${[...idx.pacientes].sort((a,b)=>a.nome.localeCompare(b.nome)).map(p=>`<option value="${p.id}">${esc(p.nome)}</option>`).join("")}</select></div>
-    <div><label>Data</label><input type="date" id="a_d" value="${h}"></div><div><label>Hora</label><input type="time" id="a_h" value="08:00"></div>
-    <div><label>Tipo</label><select id="a_t">${Object.entries(TIPOS).filter(([k,t])=>!t.off).map(([k,t])=>`<option value="${k}">${t.nome}</option>`).join("")}</select></div>
-    <div><label>Observação</label><input id="a_o"></div></div><button class="btn" id="a_add" style="margin-top:14px">${lab("cal","Agendar")}</button></div>
-   ${dias.map(d=>`<div class="card"><h3>${d===h?"Hoje":new Date(d+"T12:00").toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long"})}</h3>
-     ${l.filter(a=>a.data===d).map(a=>`<div class="li"><div class="av" style="background:var(--t-${a.tipo});font-size:12px">${a.hora}</div>
-      <div class="sp"><div class="n">${esc(nomeP(a.pid))}</div><div class="m">${esc(TIPOS[a.tipo]?.nome||"")} ${esc(a.obs||"")}</div></div>
-      <button class="btn sm" data-i="${a.id}">Iniciar</button><button class="btn danger sm" data-x="${a.id}">${ic("trash")}</button></div>`).join("")}</div>`).join("")||`<div class="card empty">Sem consultas agendadas.</div>`}`;
-  $("#a_add").onclick=async()=>{ if(!$("#a_p").value) return toast("Cadastre um paciente primeiro.");
-    idx.agenda.push({id:uid(),pid:$("#a_p").value,data:$("#a_d").value,hora:$("#a_h").value,tipo:$("#a_t").value,obs:$("#a_o").value}); await store.saveIndex(idx); toast("Agendado."); telaAgenda(); };
-  $$("[data-x]",page).forEach(b=>b.onclick=async()=>{ idx.agenda=idx.agenda.filter(a=>a.id!==b.dataset.x); await store.saveIndex(idx); telaAgenda(); });
-  $$("[data-i]",page).forEach(b=>b.onclick=async()=>{ const a=idx.agenda.find(x=>x.id===b.dataset.i); formConsulta(await getPaciente(a.pid),null,a.tipo); });
+/* ---------- endireitar (4 cantos) e limpar ---------- */
+function homografia(q){
+  const [p0,p1,p2,p3]=q, dx1=p1.x-p2.x, dx2=p3.x-p2.x, dx3=p0.x-p1.x+p2.x-p3.x, dy1=p1.y-p2.y, dy2=p3.y-p2.y, dy3=p0.y-p1.y+p2.y-p3.y;
+  const den=dx1*dy2-dx2*dy1; let g=0,h=0;
+  if(Math.abs(dx3)>1e-9||Math.abs(dy3)>1e-9){ g=(dx3*dy2-dx2*dy3)/den; h=(dx1*dy3-dx3*dy1)/den; }
+  return {a:p1.x-p0.x+g*p1.x, b:p3.x-p0.x+h*p3.x, c:p0.x, d:p1.y-p0.y+g*p1.y, e:p3.y-p0.y+h*p3.y, f:p0.y, g, h};
 }
-function telaPerfil(){
-  const f=perfil(); const i=(k,l)=>`<div><label>${l}</label><input id="pf_${k}" value="${esc(f[k]||"")}"></div>`;
-  page.innerHTML=`<h2 style="margin-bottom:16px">Meu perfil</h2><div class="card"><h3>Cabeçalho da impressão</h3>
-   <p class="hint">Aparece no topo e na assinatura dos prontuários impressos. Fica salvo neste navegador.</p>
-   <div class="grid">${i("nome","Nome (ex.: Dr. Fulano de Tal)")}${i("crm","CRM")}${i("esp","Especialidade")}${i("local","Local de atendimento")}</div>
-   <button class="btn" id="pf_ok" style="margin-top:16px">${lab("save","Salvar perfil")}</button></div>`;
-  $("#pf_ok").onclick=()=>{ const o={}; ["nome","crm","esp","local"].forEach(k=>o[k]=$("#pf_"+k).value.trim());
-    try{ localStorage.setItem("perfil",JSON.stringify(o)); toast("Perfil salvo."); }catch(e){ toast("Não foi possível salvar."); } };
+function endireitarImg(im,q,ow,oh){
+  const sc=document.createElement("canvas"); sc.width=im.width; sc.height=im.height; const sx=sc.getContext("2d"); sx.drawImage(im,0,0);
+  const sd=sx.getImageData(0,0,sc.width,sc.height).data, sw=sc.width, sh=sc.height, H=homografia(q);
+  const out=document.createElement("canvas"); out.width=ow; out.height=oh; const ox=out.getContext("2d"), od=ox.createImageData(ow,oh), d=od.data;
+  for(let y=0;y<oh;y++) for(let x=0;x<ow;x++){
+    const u=(x+.5)/ow, v=(y+.5)/oh, k=H.g*u+H.h*v+1;
+    let X=(H.a*u+H.b*v+H.c)/k-.5, Y=(H.d*u+H.e*v+H.f)/k-.5;
+    X=Math.max(0,Math.min(sw-1.001,X)); Y=Math.max(0,Math.min(sh-1.001,Y));
+    const x0=X|0, y0=Y|0, fx=X-x0, fy=Y-y0, i00=(y0*sw+x0)*4, i10=i00+4, i01=i00+sw*4, i11=i01+4, o=(y*ow+x)*4;
+    for(let ch=0;ch<3;ch++) d[o+ch]=(sd[i00+ch]*(1-fx)+sd[i10+ch]*fx)*(1-fy)+(sd[i01+ch]*(1-fx)+sd[i11+ch]*fx)*fy;
+    d[o+3]=255;
+  }
+  ox.putImageData(od,0,0); return out;
 }
-function imprimir(html){ $("#print").innerHTML=html; window.print(); }
+function limparFundo(c,cor){
+  const w=c.width, h=c.height, x=c.getContext("2d"), img=x.getImageData(0,0,w,h), d=img.data;
+  const sw=Math.max(8,Math.round(w/14)), sh=Math.max(8,Math.round(h/14)), sm=document.createElement("canvas"); sm.width=sw; sm.height=sh;
+  const sx=sm.getContext("2d"); sx.imageSmoothingQuality="high"; sx.drawImage(c,0,0,sw,sh);
+  const s=sx.getImageData(0,0,sw,sh); let a=s.data;
+  for(let pass=0;pass<8;pass++){ const b=new Uint8ClampedArray(a);
+    for(let y=0;y<sh;y++) for(let xx=0;xx<sw;xx++) for(let ch=0;ch<3;ch++){ let m=0;
+      for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){ const yy=Math.min(sh-1,Math.max(0,y+dy)), xq=Math.min(sw-1,Math.max(0,xx+dx)); const v=a[(yy*sw+xq)*4+ch]; if(v>m) m=v; }
+      b[(y*sw+xx)*4+ch]=m; }
+    a=b; }
+  s.data.set(a); sx.putImageData(s,0,0);
+  const bg=document.createElement("canvas"); bg.width=w; bg.height=h; const bx=bg.getContext("2d"); bx.imageSmoothingQuality="high"; bx.drawImage(sm,0,0,w,h);
+  const bd=bx.getImageData(0,0,w,h).data;
+  for(let i=0;i<d.length;i+=4){
+    let r=Math.min(255,d[i]/Math.max(bd[i],1)*255), g=Math.min(255,d[i+1]/Math.max(bd[i+1],1)*255), b=Math.min(255,d[i+2]/Math.max(bd[i+2],1)*255);
+    if(cor){ const f=v=>255*Math.pow(Math.max(0,Math.min(1,(v-90)/150)),2); r=f(r); g=f(g); b=f(b); }
+    else { const v=255*Math.pow(Math.max(0,Math.min(1,((r*.3+g*.59+b*.11)-100)/135)),2); r=g=b=v; }
+    d[i]=r; d[i+1]=g; d[i+2]=b;
+  }
+  x.putImageData(img,0,0); return c;
+}
+function abrirEndireitar(url,stage,pronto,cancelar){
+  carregarImg(url).then(im=>{
+    const W=im.width, H=im.height, ins=.06;
+    const q=[{x:ins,y:ins},{x:1-ins,y:ins},{x:1-ins,y:1-ins},{x:ins,y:1-ins}];
+    stage.innerHTML=`<div style="max-width:640px;margin:0 auto"><p class="hint" style="margin:0 0 8px">Arraste as 4 bolinhas até os cantos da folha. Depois clique em Aplicar.</p>
+      <div id="ej" style="position:relative;touch-action:none"><img src="${url}" style="width:100%;display:block;border-radius:6px" alt="">
+      <svg viewBox="0 0 1 1" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none"><polygon id="epl" fill="rgba(14,124,134,.18)" stroke="#0e7c86" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>
+      ${q.map((_,i)=>`<div class="eh" data-i="${i}" style="position:absolute;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;background:rgba(14,124,134,.9);border:3px solid #fff;cursor:grab;box-shadow:0 1px 4px rgba(0,0,0,.4);touch-action:none"></div>`).join("")}</div>
+      <div class="row" style="margin-top:12px"><label style="margin:0;text-transform:none;font-size:13px"><input type="checkbox" id="e1" checked style="width:auto"> Limpar sombras e fundo</label>
+      <label style="margin:0;text-transform:none;font-size:13px"><input type="checkbox" id="e2" style="width:auto"> Manter cores (logomarca)</label>
+      <label style="margin:0;text-transform:none;font-size:13px"><input type="checkbox" id="e3" checked style="width:auto"> Formato A4</label></div>
+      <div class="row" style="margin-top:12px"><button class="btn" id="eok">Aplicar</button><button class="btn sec" id="ecn">Cancelar</button></div></div>`;
+    const box=$("#ej"), hs=$$(".eh",stage), pl=$("#epl");
+    const pos=()=>{ hs.forEach((h,i)=>{ h.style.left=q[i].x*100+"%"; h.style.top=q[i].y*100+"%"; }); pl.setAttribute("points",q.map(p=>p.x+","+p.y).join(" ")); }; pos();
+    hs.forEach(h=>h.addEventListener("pointerdown",e=>{ e.preventDefault(); const i=+h.dataset.i, rect=box.getBoundingClientRect(); h.setPointerCapture(e.pointerId);
+      const mv=ev=>{ q[i].x=Math.max(0,Math.min(1,(ev.clientX-rect.left)/rect.width)); q[i].y=Math.max(0,Math.min(1,(ev.clientY-rect.top)/rect.height)); pos(); };
+      const up=()=>{ h.removeEventListener("pointermove",mv); h.removeEventListener("pointerup",up); };
+      h.addEventListener("pointermove",mv); h.addEventListener("pointerup",up); }));
+    $("#ecn").onclick=cancelar;
+    $("#eok").onclick=()=>{
+      const b=$("#eok"); b.disabled=true; b.textContent="Processando…";
+      setTimeout(()=>{ try{
+        const P=q.map(p=>({x:p.x*W,y:p.y*H})), dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+        let ow,oh; if($("#e3").checked){ ow=1240; oh=1754; } else { ow=Math.round(Math.max(dist(P[0],P[1]),dist(P[3],P[2]))); oh=Math.round(Math.max(dist(P[0],P[3]),dist(P[1],P[2]))); const sc=Math.min(1,1500/ow); ow=Math.round(ow*sc); oh=Math.round(oh*sc); }
+        let c=endireitarImg(im,P,ow,oh); if($("#e1").checked) c=limparFundo(c,$("#e2").checked);
+        pronto(c);
+      }catch(e){ toast("Erro ao processar: "+e.message); cancelar(); } },30);
+    };
+  });
+}
 
-/* ---------- login ---------- */
-async function entrar(s){
-  store=s;
-  try{ await store.init(); idx=await store.loadIndex();
-    $("#login").style.display="none"; $("#app").style.display="block";
-    $("#who").textContent=s===DriveStore?(s.user?.email||""):"Modo demonstração"; nav("hoje");
-  }catch(e){ toast("Falha no login: "+e.message); }
+/* ---------- OCR (opcional) ---------- */
+const norm = s => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]/g,"");
+async function carregarTesseract(){
+  if(window.Tesseract) return;
+  await new Promise((res,rej)=>{ const s=document.createElement("script"); s.src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"; s.onload=res; s.onerror=()=>rej(new Error("Não foi possível carregar o OCR")); document.head.appendChild(s); });
 }
-if(!CFG.GOOGLE_CLIENT_ID) $("#demoBox").style.display="block";
-$("#btnGoogle").onclick=()=>CFG.GOOGLE_CLIENT_ID?entrar(DriveStore):toast("Configure o Client ID em config.js.");
-$("#btnDemo").onclick=()=>entrar(DemoStore);
-$("#sair").onclick=()=>{ if(DriveStore.token&&window.google) google.accounts.oauth2.revoke(DriveStore.token); location.reload(); };
-</script>
-<script src="documentos.js?v=4"></script>
-</body>
-</html>
+async function ocrSugerir(m){
+  await carregarTesseract();
+  const im=await carregarImg(m.img), W=im.width, H=im.height;
+  const r=await Tesseract.recognize(m.img,"por");
+  const words=(r.data.words||[]).map(w=>({t:norm(w.text),x0:w.bbox.x0,y0:w.bbox.y0,x1:w.bbox.x1,y1:w.bbox.y1})).filter(w=>w.t);
+  const first=(...keys)=>words.find(w=>keys.some(k=>w.t.startsWith(k)));
+  const novos=[]; const linha=(tipo,w,larg)=>{ if(!w) return; const h=(w.y1-w.y0);
+    novos.push({id:uid(),tipo,x:+((w.x1+W*.01)/W*100).toFixed(1),y:+(Math.max(0,w.y0-h*.2)/H*100).toFixed(1),w:Math.min(larg,100-(w.x1+W*.01)/W*100-2),h:+(h*1.5/H*100).toFixed(1),fs:+Math.max(.014,Math.min(.035,h/W*1.15)).toFixed(3)}); };
+  linha("nome",first("nome","paciente"),60); linha("sus",first("sus")||first("cartao"),36); linha("idade",first("idade"),16);
+  linha("data",words.find(w=>w.t==="data"||w.t==="date"),20); linha("endereco",first("endereco","residencia"),50);
+  const abaixo=words.filter(w=>w.y0>H*.18&&["exame","solicit","prescri","rp","uso"].some(k=>w.t.startsWith(k)));
+  const lc=abaixo[0]||null;
+  const base=Math.max(0,...novos.map(n=>n.y+n.h));
+  if(lc&&lc.y1/H*100<base) lc.y1=(base+1)/100*H;
+  if(lc) novos.push({id:uid(),tipo:"conteudo",x:8,y:+((lc.y1+H*.01)/H*100).toFixed(1),w:84,h:+Math.max(20,Math.min(55,80-(lc.y1/H*100))).toFixed(1),fs:.024});
+  if(!novos.length) return 0;
+  const tipos=new Set(novos.map(n=>n.tipo)); m.campos=[...m.campos.filter(c=>!tipos.has(c.tipo)),...novos];
+  return novos.length;
+}
+
+/* ---------- editor de modelo ---------- */
+function editorModelo(orig){
+  const m=orig?JSON.parse(JSON.stringify(orig)):{id:uid(),nome:"Novo modelo",tipo:"exames",img:"",ratio:1.414,campos:[]};
+  if(orig?.padrao){ m.id=uid(); m.nome=orig.nome.replace("Padrão · ","")+" (meu)"; delete m.padrao; }
+  let sel=null;
+  page.innerHTML=`<div class="row" style="margin-bottom:10px"><button class="btn ghost sm" id="ebk">${lab("back","Modelos")}</button><h2>${orig&&!orig.padrao?"Editar modelo":"Novo modelo"}</h2></div>
+   <div class="edgrid"><div class="stage" id="stage"></div><div>
+    <div class="card"><h3>Modelo</h3><label style="margin-top:0">Nome</label><input id="mn" value="${esc(m.nome)}">
+      <label>Tipo</label><select id="mt"><option value="exames">Pedido de exames</option><option value="receita">Receita</option><option value="outro">Outro</option></select></div>
+    <div class="card"><h3>Foto do modelo</h3><input type="file" id="mf" accept="image/*,application/pdf" style="display:none">
+      <div class="row"><button class="btn sec sm" id="bf">${lab("plus",m.img?"Trocar arquivo":"Escolher foto ou PDF")}</button>
+      <button class="btn sec sm" id="b90" title="Girar à esquerda">↺</button><button class="btn sec sm" id="b270" title="Girar à direita">↻</button>
+      <button class="btn sec sm" id="bm">Contraste</button><button class="btn sec sm" id="bu">Desfazer</button></div>
+      <div class="row" style="margin-top:8px"><button class="btn sm" id="be">${lab("edit","Endireitar e limpar")}</button></div>
+      <div class="row" style="margin-top:8px"><button class="btn sec sm" id="bq">${lab("plus","Enviar do celular (QR code)")}</button></div>
+      <div id="qrbox"></div>
+      <div class="row" style="margin-top:8px"><button class="btn sm" id="bo">Sugerir campos automaticamente</button></div>
+      <p class="hint" style="margin:8px 0 0">Fotografe a folha de cima, com boa luz e reta. O reconhecimento de texto roda no seu navegador. Depois ajuste os campos arrastando.</p></div>
+    <div class="card"><h3>Campos</h3><div class="row" id="pal" style="gap:6px">${Object.entries(FTYPES).map(([k,v])=>`<button class="btn sec sm" data-add="${k}">+ ${v}</button>`).join("")}</div>
+      <div id="props" style="margin-top:12px"></div></div>
+    <div class="row"><button class="btn" id="msave">${lab("save","Salvar modelo")}</button></div></div></div>`;
+  $("#mt").value=m.tipo;
+  const stage=$("#stage"), draw=()=>{ stage.innerHTML=paginaHTML(m,AMOSTRA,{edit:true,sel}); };
+  const props=()=>{ const f=m.campos.find(c=>c.id===sel), el=$("#props");
+    if(!f){ el.innerHTML=`<p class="hint" style="margin:0">Clique em um campo para ajustar. Arraste para mover e use o canto para redimensionar.</p>`; return; }
+    el.innerHTML=`<label style="margin-top:0">Tipo do campo</label><select id="pt">${Object.entries(FTYPES).map(([k,v])=>`<option value="${k}" ${k===f.tipo?"selected":""}>${v}</option>`).join("")}</select>
+     <label>Tamanho da letra</label><input type="range" id="pf" min="0.012" max="0.045" step="0.001" value="${f.fs}">
+     <button class="btn danger sm" id="pd" style="margin-top:10px">${lab("trash","Remover campo")}</button>`;
+    $("#pt").onchange=e=>{ f.tipo=e.target.value; draw(); }; $("#pf").oninput=e=>{ f.fs=+e.target.value; draw(); };
+    $("#pd").onclick=()=>{ m.campos=m.campos.filter(c=>c.id!==f.id); sel=null; draw(); props(); }; };
+  const select=id=>{ sel=id; $$(".dfield",stage).forEach(e=>e.classList.toggle("sel",e.dataset.id===id)); props(); };
+  stage.addEventListener("pointerdown",e=>{
+    const fe=e.target.closest(".dfield"); if(!fe){ select(null); return; }
+    const f=m.campos.find(c=>c.id===fe.dataset.id); select(f.id); e.preventDefault();
+    const rect=stage.firstElementChild.getBoundingClientRect(), resize=e.target.classList.contains("hd");
+    const sx=e.clientX, sy=e.clientY, o={x:f.x,y:f.y,w:f.w,h:f.h};
+    const mv=ev=>{ const dx=(ev.clientX-sx)/rect.width*100, dy=(ev.clientY-sy)/rect.height*100;
+      if(resize){ f.w=Math.max(4,Math.min(100-f.x,o.w+dx)); f.h=Math.max(1.5,Math.min(100-f.y,o.h+dy)); }
+      else { f.x=Math.max(0,Math.min(100-f.w,o.x+dx)); f.y=Math.max(0,Math.min(100-f.h,o.y+dy)); }
+      Object.assign(fe.style,{left:f.x+"%",top:f.y+"%",width:f.w+"%",height:f.h+"%"}); };
+    const up=()=>{ window.removeEventListener("pointermove",mv); window.removeEventListener("pointerup",up); };
+    window.addEventListener("pointermove",mv); window.addEventListener("pointerup",up);
+  });
+  $$("[data-add]").forEach(b=>b.onclick=()=>{ const k=b.dataset.add, d=FDEF[k]; const f={id:uid(),tipo:k,x:10,y:10,w:d.w,h:d.h,fs:d.fs}; m.campos.push(f); draw(); select(f.id); });
+  const hist=[]; const setImg=async c=>{ if(m.img) hist.push(m.img); m.img=canvasParaUrl(c); m.ratio=+(c.height/c.width).toFixed(4); draw(); $("#bf").lastChild.textContent="Trocar arquivo"; };
+  $("#bf").onclick=()=>$("#mf").click();
+  $("#mf").onchange=async e=>{ if(e.target.files[0]){ try{ await setImg(await arquivoParaImg(e.target.files[0])); }catch(x){ toast("Não consegui abrir a imagem."); } } };
+  const need=()=>{ if(!m.img){ toast("Escolha uma foto primeiro."); return false; } return true; };
+  $("#b90").onclick=async()=>need()&&setImg(await girarImg(m.img,-90)); $("#b270").onclick=async()=>need()&&setImg(await girarImg(m.img,90));
+  $("#bm").onclick=async()=>need()&&setImg(await melhorarImg(m.img));
+  $("#be").onclick=()=>{ if(!need()) return; abrirEndireitar(m.img,stage,async c=>{ await setImg(c); props(); toast("Folha endireitada. Se ficou ruim, use Desfazer."); },()=>{ draw(); props(); }); };
+  $("#bu").onclick=()=>{ if(!hist.length) return toast("Nada para desfazer."); const u=hist.pop(); m.img=u; carregarImg(u).then(i=>{ m.ratio=+(i.height/i.width).toFixed(4); draw(); }); };
+  $("#bq").onclick=()=>receberDoCelular($("#qrbox"),async blob=>{ await setImg(await arquivoParaImg(blob)); toast("Foto recebida do celular."); });
+  $("#bo").onclick=async()=>{ if(!need()) return; const b=$("#bo"); b.disabled=true; b.textContent="Lendo a imagem…";
+    try{ const n=await ocrSugerir(m); toast(n?`${n} campo(s) sugerido(s). Ajuste se precisar.`:"Não encontrei rótulos conhecidos. Adicione os campos manualmente."); draw(); props(); }
+    catch(x){ toast("OCR indisponível: "+x.message); } b.disabled=false; b.textContent="Sugerir campos automaticamente"; };
+  $("#ebk").onclick=()=>{ pararQR(); nav("modelos"); };
+  $("#msave").onclick=async()=>{ m.nome=$("#mn").value.trim()||"Modelo"; m.tipo=$("#mt").value; if(!m.campos.length) return toast("Adicione ao menos um campo.");
+    await getModelos(); const i=MOD.findIndex(x=>x.id===m.id); if(i<0) MOD.push(m); else MOD[i]=m;
+    $("#msave").disabled=true; try{ await store.saveAux("modelos.json",MOD); toast("Modelo salvo."); nav("modelos"); }catch(e){ toast("Erro ao salvar: "+e.message); $("#msave").disabled=false; } };
+  draw(); props();
+}
+
+/* ---------- emitir documento ---------- */
+async function telaDocumento(p,tipo){
+  page.innerHTML=`<p class="mut">Carregando…</p>`;
+  const todos=await getModelos(), fav=await getFav(), ms=todos.filter(m=>m.tipo===tipo||m.tipo==="outro");
+  const titulo=tipo==="receita"?"Receita":"Pedido de exames";
+  page.innerHTML=`<div class="cbar"><button class="btn ghost sm" id="dbk">${lab("back","Voltar")}</button><h2>${titulo} <span class="mut" style="font-weight:400">· ${esc(p.nome)}</span></h2>
+    <button class="btn" id="dpr">${lab("print","Imprimir")}</button></div>
+   <div class="edgrid" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr)"><div>
+    <div class="card"><label style="margin-top:0">Modelo</label><select id="dm">${ms.map(m=>`<option value="${m.id}">${esc(m.nome)}</option>`).join("")}</select>
+     <div class="row" style="margin-top:10px"><label style="margin:0"><input type="checkbox" id="dsf" style="width:auto"> Imprimir sem o fundo (papel já impresso)</label>
+      <label style="margin:0">Vias <select id="dv" style="width:auto;display:inline-block"><option>1</option><option>2</option></select></label></div></div>
+    <div class="card"><h3>${tipo==="receita"?"Prescrição":"Exames"}</h3>
+     ${tipo==="exames"?`<div class="hint">Pacotes</div><div class="pk">${Object.keys(PACOTES).map(k=>`<span class="chip" data-pk="${esc(k)}">${esc(k)}</span>`).join("")}</div>`:""}
+     <div class="hint">Favoritos</div><div class="pk" id="favs"></div>
+     ${tipo==="exames"?`<input id="dx" list="exlist" placeholder="Adicionar exame (digite e Enter)" class="up"><datalist id="exlist">${EXAMES.map(e=>`<option value="${esc(e)}">`).join("")}</datalist>`:""}
+     <textarea id="dt" style="min-height:190px;margin-top:8px;${tipo==="receita"?"text-transform:none":""}" placeholder="${tipo==="receita"?"Digite a prescrição…":"Um exame por linha"}"></textarea>
+     <div class="row" style="margin-top:8px"><button class="btn sec sm" id="dfv">${lab("plus","Salvar como favorito")}</button><button class="btn ghost sm" id="dcl">Limpar</button></div>
+     <label>Indicação clínica / CID</label><input id="do" class="up"></div>
+   </div><div><div class="stage" id="dpv"></div></div></div>`;
+  const get=()=>ms.find(m=>m.id===$("#dm").value)||ms[0];
+  const render=()=>{ $("#dpv").innerHTML=paginaHTML(get(),valoresDoc(p,$("#dt").value,$("#do").value),{semFundo:$("#dsf").checked,fluid:true}); $("#dsf").disabled=!get().img; };
+  const favs=()=>{ $("#favs").innerHTML=(fav[tipo]||[]).map((f,i)=>`<span class="chip" data-fv="${i}">${esc(f.nome)}<span class="x" data-fx="${i}">✕</span></span>`).join("")||`<span class="hint">Nenhum favorito salvo ainda.</span>`; };
+  const addLinhas=ls=>{ const t=$("#dt"), cur=t.value.split("\n").map(x=>x.trim()).filter(Boolean); for(const l of ls) if(!cur.includes(l)) cur.push(l); t.value=cur.join("\n"); render(); };
+  ["dm","dsf","dt","do"].forEach(id=>$("#"+id).addEventListener("input",render)); $("#dm").onchange=render; $("#dsf").onchange=render;
+  $$("[data-pk]").forEach(c=>c.onclick=()=>addLinhas(PACOTES[c.dataset.pk]));
+  if($("#dx")) $("#dx").addEventListener("keydown",e=>{ if(e.key==="Enter"&&e.target.value.trim()){ addLinhas([e.target.value.trim().toUpperCase()]); e.target.value=""; } });
+  $("#favs").onclick=async e=>{ const x=e.target.closest("[data-fx]"), c=e.target.closest("[data-fv]");
+    if(x){ fav[tipo].splice(+x.dataset.fx,1); await store.saveAux("favoritos.json",fav); favs(); return; }
+    if(c){ const f=fav[tipo][+c.dataset.fv]; const t=$("#dt"); t.value=(t.value?t.value.replace(/\n+$/,"")+"\n\n":"")+f.texto; render(); } };
+  $("#dfv").onclick=async()=>{ const t=$("#dt").value.trim(); if(!t) return toast("Escreva o conteúdo antes."); const n=prompt("Nome do favorito:"); if(!n) return;
+    fav[tipo].push({nome:n.trim(),texto:t}); await store.saveAux("favoritos.json",fav); favs(); toast("Favorito salvo."); };
+  $("#dcl").onclick=()=>{ $("#dt").value=""; render(); };
+  $("#dbk").onclick=()=>telaPaciente(p.id);
+  $("#dpr").onclick=async()=>{
+    const t=$("#dt").value.trim(); if(!t) return toast("Escreva o conteúdo do documento.");
+    const m=get(), html=paginaHTML(m,valoresDoc(p,t,$("#do").value),{semFundo:$("#dsf").checked}).repeat(+$("#dv").value);
+    imprimirDoc(html);
+    p.docs=p.docs||[]; p.docs.push({id:uid(),data:hoje(),tipo,modelo:m.nome,modeloId:m.id,texto:t,obs:$("#do").value});
+    try{ await gravarPaciente(p); toast("Documento registrado no prontuário."); }catch(e){ toast("Impresso, mas não consegui registrar: "+e.message); } };
+  favs(); render();
+}
+async function reimprimirDoc(p,id){
+  const d=p.docs.find(x=>x.id===id), ms=await getModelos(), m=ms.find(x=>x.id===d.modeloId)||ms.find(x=>x.tipo===d.tipo);
+  if(!confirm(`Reimprimir ${d.tipo==="receita"?"receita":"pedido de exames"} de ${fmtData(d.data)}?`)) return;
+  imprimirDoc(paginaHTML(m,{...valoresDoc(p,d.texto,d.obs),data:fmtData(d.data)}));
+}
+
+/* ---------- foto pelo celular (QR code, usando o Drive como ponte) ---------- */
+let qrTimer=null;
+function pararQR(){ clearInterval(qrTimer); qrTimer=null; }
+function carregarQR(){
+  if(window.QRCode) return Promise.resolve();
+  return new Promise((res,rej)=>{ const s=document.createElement("script"); s.src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"; s.onload=res; s.onerror=()=>rej(new Error("QR indisponível")); document.head.appendChild(s); });
+}
+async function achaFoto(prefixo){
+  const q=`name contains '${prefixo}' and '${store.rootId}' in parents and trashed=false`;
+  const l=await (await store.api("https://www.googleapis.com/drive/v3/files?q="+encodeURIComponent(q)+"&fields=files(id,name)")).json();
+  return l.files[0]||null;
+}
+async function receberDoCelular(box,aoReceber){
+  if(store!==DriveStore) return toast("O envio pelo celular precisa do login com Google (não funciona no modo demonstração).");
+  pararQR();
+  const id=[...crypto.getRandomValues(new Uint8Array(12))].map(b=>b.toString(16).padStart(2,"0")).join("");
+  const url=`${location.origin}${location.pathname}?up=${id}`, nome=`foto-${id}.jpg`;
+  box.innerHTML=`<div class="card" style="margin:10px 0 0;text-align:center;box-shadow:none"><div id="qrimg" style="display:inline-block;padding:8px;background:#fff;border-radius:8px"></div>
+    <p style="margin:8px 0 2px;font-weight:600">Aponte a câmera do celular</p>
+    <p class="hint" style="margin:0">Abra o link, entre com a <b>mesma conta Google</b> e tire a foto. Ela aparece aqui sozinha.</p>
+    <p class="hint" id="qrst" style="margin:8px 0 0">Aguardando a foto…</p><button class="btn ghost sm" id="qrx" style="margin-top:6px">Cancelar</button></div>`;
+  $("#qrx").onclick=()=>{ pararQR(); box.innerHTML=""; };
+  try{ await carregarQR(); new QRCode($("#qrimg"),{text:url,width:176,height:176,correctLevel:QRCode.CorrectLevel.M}); }
+  catch(e){ $("#qrimg").textContent=url; }
+  const ate=Date.now()+15*60e3;
+  qrTimer=setInterval(async()=>{
+    if(!document.body.contains(box)||!$("#qrst")||Date.now()>ate){ pararQR(); return; }
+    try{
+      const fa=await achaFoto(`foto-${id}`); if(!fa) return; const fid=fa.id;
+      pararQR(); $("#qrst").textContent="Arquivo recebido. Processando…";
+      let blob=await (await store.api(`https://www.googleapis.com/drive/v3/files/${fid}?alt=media`)).blob();
+      if(/\.pdf$/i.test(fa.name)) blob=new File([blob],fa.name,{type:"application/pdf"});
+      await aoReceber(blob); box.innerHTML="";
+      store.api(`https://www.googleapis.com/drive/v3/files/${fid}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({trashed:true})}).catch(()=>{});
+    }catch(e){ if($("#qrst")) $("#qrst").textContent="Erro: "+e.message; }
+  },2500);
+}
+
+/* tela exibida no celular quando o link tem ?up=... */
+(function(){
+  const id=new URLSearchParams(location.search).get("up");
+  if(!id||!/^[a-f0-9]{16,64}$/.test(id)) return;
+  $("#login").style.display="none"; $("#app").style.display="none";
+  const el=document.createElement("div");
+  el.style.cssText="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center";
+  el.innerHTML=`<div class="logo" style="color:var(--pri)"><b style="background:var(--pri);color:#fff">P</b> Prontuário</div>
+    <h2>Enviar foto do modelo</h2><p class="mut" style="max-width:320px;margin:0">Entre com a mesma conta Google usada no computador e fotografe a folha de cima, com boa luz.</p>
+    <button class="btn" id="cel1" style="padding:12px 24px;font-size:16px">Entrar com Google</button>
+    <div id="cel2" style="display:none;flex-direction:column;gap:10px;align-items:stretch;width:260px">
+      <button class="btn" id="cel3" style="padding:14px;font-size:16px">${ic("plus")} Tirar foto</button>
+      <button class="btn sec" id="cel4">Escolher da galeria</button>
+      <input type="file" id="cf1" accept="image/*" capture="environment" style="display:none"><input type="file" id="cf2" accept="image/*,application/pdf" style="display:none"></div>
+    <p class="hint" id="cel5" style="min-height:20px"></p>`;
+  document.body.appendChild(el);
+  const msg=t=>{ $("#cel5").textContent=t; };
+  $("#cel1").onclick=async()=>{
+    if(!CFG.GOOGLE_CLIENT_ID) return msg("Login com Google não configurado.");
+    msg("Entrando…");
+    try{ store=DriveStore; await store.init(); $("#cel1").style.display="none"; $("#cel2").style.display="flex"; msg("Conectado como "+(store.user?.email||"")); }
+    catch(e){ msg("Falha no login: "+e.message); }
+  };
+  $("#cel3").onclick=()=>$("#cf1").click(); $("#cel4").onclick=()=>$("#cf2").click();
+  const enviar=async e=>{
+    const f=e.target.files[0]; if(!f) return; msg("Enviando…");
+    try{
+      const pdf=f.type==="application/pdf"||/\.pdf$/i.test(f.name);
+      const blob=pdf?f:await new Promise(async r=>(await arquivoParaImg(f)).toBlob(r,"image/jpeg",.82));
+      const b="x"+uid(), meta={name:`foto-${id}.${pdf?"pdf":"jpg"}`,parents:[store.rootId]};
+      const pre=`--${b}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n--${b}\r\nContent-Type: ${pdf?"application/pdf":"image/jpeg"}\r\n\r\n`;
+      await store.api("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id",
+        {method:"POST",headers:{"Content-Type":"multipart/related; boundary="+b},body:new Blob([pre,blob,`\r\n--${b}--`])});
+      msg("Foto enviada! Pode voltar ao computador. Para enviar outra, toque em Tirar foto.");
+    }catch(x){ msg("Erro ao enviar: "+x.message); }
+    e.target.value="";
+  };
+  $("#cf1").onchange=enviar; $("#cf2").onchange=enviar;
+})();
