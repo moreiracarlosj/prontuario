@@ -159,6 +159,8 @@ function editorModelo(orig){
       <div class="row"><button class="btn sec sm" id="bf">${lab("plus",m.img?"Trocar foto":"Escolher foto")}</button>
       <button class="btn sec sm" id="b90" title="Girar à esquerda">↺</button><button class="btn sec sm" id="b270" title="Girar à direita">↻</button>
       <button class="btn sec sm" id="bm">Melhorar</button></div>
+      <div class="row" style="margin-top:8px"><button class="btn sec sm" id="bq">${lab("plus","Enviar do celular (QR code)")}</button></div>
+      <div id="qrbox"></div>
       <div class="row" style="margin-top:8px"><button class="btn sm" id="bo">Sugerir campos automaticamente</button></div>
       <p class="hint" style="margin:8px 0 0">Fotografe a folha de cima, com boa luz e reta. O reconhecimento de texto roda no seu navegador. Depois ajuste os campos arrastando.</p></div>
     <div class="card"><h3>Campos</h3><div class="row" id="pal" style="gap:6px">${Object.entries(FTYPES).map(([k,v])=>`<button class="btn sec sm" data-add="${k}">+ ${v}</button>`).join("")}</div>
@@ -193,10 +195,11 @@ function editorModelo(orig){
   const need=()=>{ if(!m.img){ toast("Escolha uma foto primeiro."); return false; } return true; };
   $("#b90").onclick=async()=>need()&&setImg(await girarImg(m.img,-90)); $("#b270").onclick=async()=>need()&&setImg(await girarImg(m.img,90));
   $("#bm").onclick=async()=>need()&&setImg(await melhorarImg(m.img));
+  $("#bq").onclick=()=>receberDoCelular($("#qrbox"),async blob=>{ await setImg(await arquivoParaImg(blob)); toast("Foto recebida do celular."); });
   $("#bo").onclick=async()=>{ if(!need()) return; const b=$("#bo"); b.disabled=true; b.textContent="Lendo a imagem…";
     try{ const n=await ocrSugerir(m); toast(n?`${n} campo(s) sugerido(s). Ajuste se precisar.`:"Não encontrei rótulos conhecidos. Adicione os campos manualmente."); draw(); props(); }
     catch(x){ toast("OCR indisponível: "+x.message); } b.disabled=false; b.textContent="Sugerir campos automaticamente"; };
-  $("#ebk").onclick=()=>nav("modelos");
+  $("#ebk").onclick=()=>{ pararQR(); nav("modelos"); };
   $("#msave").onclick=async()=>{ m.nome=$("#mn").value.trim()||"Modelo"; m.tipo=$("#mt").value; if(!m.campos.length) return toast("Adicione ao menos um campo.");
     await getModelos(); const i=MOD.findIndex(x=>x.id===m.id); if(i<0) MOD.push(m); else MOD[i]=m;
     $("#msave").disabled=true; try{ await store.saveAux("modelos.json",MOD); toast("Modelo salvo."); nav("modelos"); }catch(e){ toast("Erro ao salvar: "+e.message); $("#msave").disabled=false; } };
@@ -249,3 +252,79 @@ async function reimprimirDoc(p,id){
   if(!confirm(`Reimprimir ${d.tipo==="receita"?"receita":"pedido de exames"} de ${fmtData(d.data)}?`)) return;
   imprimirDoc(paginaHTML(m,{...valoresDoc(p,d.texto,d.obs),data:fmtData(d.data)}));
 }
+
+/* ---------- foto pelo celular (QR code, usando o Drive como ponte) ---------- */
+let qrTimer=null;
+function pararQR(){ clearInterval(qrTimer); qrTimer=null; }
+function carregarQR(){
+  if(window.QRCode) return Promise.resolve();
+  return new Promise((res,rej)=>{ const s=document.createElement("script"); s.src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"; s.onload=res; s.onerror=()=>rej(new Error("QR indisponível")); document.head.appendChild(s); });
+}
+async function achaFoto(nome){
+  const q=`name='${nome}' and '${store.rootId}' in parents and trashed=false`;
+  const l=await (await store.api("https://www.googleapis.com/drive/v3/files?q="+encodeURIComponent(q)+"&fields=files(id)")).json();
+  return l.files[0]?.id||null;
+}
+async function receberDoCelular(box,aoReceber){
+  if(store!==DriveStore) return toast("O envio pelo celular precisa do login com Google (não funciona no modo demonstração).");
+  pararQR();
+  const id=[...crypto.getRandomValues(new Uint8Array(12))].map(b=>b.toString(16).padStart(2,"0")).join("");
+  const url=`${location.origin}${location.pathname}?up=${id}`, nome=`foto-${id}.jpg`;
+  box.innerHTML=`<div class="card" style="margin:10px 0 0;text-align:center;box-shadow:none"><div id="qrimg" style="display:inline-block;padding:8px;background:#fff;border-radius:8px"></div>
+    <p style="margin:8px 0 2px;font-weight:600">Aponte a câmera do celular</p>
+    <p class="hint" style="margin:0">Abra o link, entre com a <b>mesma conta Google</b> e tire a foto. Ela aparece aqui sozinha.</p>
+    <p class="hint" id="qrst" style="margin:8px 0 0">Aguardando a foto…</p><button class="btn ghost sm" id="qrx" style="margin-top:6px">Cancelar</button></div>`;
+  $("#qrx").onclick=()=>{ pararQR(); box.innerHTML=""; };
+  try{ await carregarQR(); new QRCode($("#qrimg"),{text:url,width:176,height:176,correctLevel:QRCode.CorrectLevel.M}); }
+  catch(e){ $("#qrimg").textContent=url; }
+  const ate=Date.now()+15*60e3;
+  qrTimer=setInterval(async()=>{
+    if(!document.body.contains(box)||!$("#qrst")||Date.now()>ate){ pararQR(); return; }
+    try{
+      const fid=await achaFoto(nome); if(!fid) return;
+      pararQR(); $("#qrst").textContent="Foto recebida. Processando…";
+      const blob=await (await store.api(`https://www.googleapis.com/drive/v3/files/${fid}?alt=media`)).blob();
+      await aoReceber(blob); box.innerHTML="";
+      store.api(`https://www.googleapis.com/drive/v3/files/${fid}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({trashed:true})}).catch(()=>{});
+    }catch(e){ if($("#qrst")) $("#qrst").textContent="Erro: "+e.message; }
+  },2500);
+}
+
+/* tela exibida no celular quando o link tem ?up=... */
+(function(){
+  const id=new URLSearchParams(location.search).get("up");
+  if(!id||!/^[a-f0-9]{16,64}$/.test(id)) return;
+  $("#login").style.display="none"; $("#app").style.display="none";
+  const el=document.createElement("div");
+  el.style.cssText="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center";
+  el.innerHTML=`<div class="logo" style="color:var(--pri)"><b style="background:var(--pri);color:#fff">P</b> Prontuário</div>
+    <h2>Enviar foto do modelo</h2><p class="mut" style="max-width:320px;margin:0">Entre com a mesma conta Google usada no computador e fotografe a folha de cima, com boa luz.</p>
+    <button class="btn" id="cel1" style="padding:12px 24px;font-size:16px">Entrar com Google</button>
+    <div id="cel2" style="display:none;flex-direction:column;gap:10px;align-items:stretch;width:260px">
+      <button class="btn" id="cel3" style="padding:14px;font-size:16px">${ic("plus")} Tirar foto</button>
+      <button class="btn sec" id="cel4">Escolher da galeria</button>
+      <input type="file" id="cf1" accept="image/*" capture="environment" style="display:none"><input type="file" id="cf2" accept="image/*" style="display:none"></div>
+    <p class="hint" id="cel5" style="min-height:20px"></p>`;
+  document.body.appendChild(el);
+  const msg=t=>{ $("#cel5").textContent=t; };
+  $("#cel1").onclick=async()=>{
+    if(!CFG.GOOGLE_CLIENT_ID) return msg("Login com Google não configurado.");
+    msg("Entrando…");
+    try{ store=DriveStore; await store.init(); $("#cel1").style.display="none"; $("#cel2").style.display="flex"; msg("Conectado como "+(store.user?.email||"")); }
+    catch(e){ msg("Falha no login: "+e.message); }
+  };
+  $("#cel3").onclick=()=>$("#cf1").click(); $("#cel4").onclick=()=>$("#cf2").click();
+  const enviar=async e=>{
+    const f=e.target.files[0]; if(!f) return; msg("Enviando…");
+    try{
+      const c=await arquivoParaImg(f), blob=await new Promise(r=>c.toBlob(r,"image/jpeg",.82));
+      const b="x"+uid(), meta={name:`foto-${id}.jpg`,parents:[store.rootId]};
+      const pre=`--${b}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n--${b}\r\nContent-Type: image/jpeg\r\n\r\n`;
+      await store.api("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id",
+        {method:"POST",headers:{"Content-Type":"multipart/related; boundary="+b},body:new Blob([pre,blob,`\r\n--${b}--`])});
+      msg("Foto enviada! Pode voltar ao computador. Para enviar outra, toque em Tirar foto.");
+    }catch(x){ msg("Erro ao enviar: "+x.message); }
+    e.target.value="";
+  };
+  $("#cf1").onchange=enviar; $("#cf2").onchange=enviar;
+})();
