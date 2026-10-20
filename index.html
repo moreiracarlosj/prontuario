@@ -357,6 +357,7 @@ function cabecalho(p){
   const l=[]; const idade=idadeDe(p);
   l.push(`NOME: ${p.nome}`);
   if(p.sus) l.push(`CARTÃO SUS: ${p.sus}`);
+  if(p.cpf) l.push(`CPF: ${p.cpf}`);
   if(p.nascimento) l.push(`NASCIMENTO: ${fmtData(p.nascimento)}`);
   if(idade) l.push(`IDADE: ${idade}`);
   const pr=[p.procedencia&&`PROCEDÊNCIA: ${p.procedencia}`, p.residencia&&`RESIDÊNCIA: ${p.residencia}`].filter(Boolean).join("   ");
@@ -530,14 +531,28 @@ function telaPacientes(busca=""){
 function formPaciente(p){
   const n=!p; p=p||{};
   const f=(k,l,x="",t="text")=>`<div><label>${l}</label><input ${t==="text"?'class="up"':""} type="${t}" id="f_${k}" value="${esc(p[k]||"")}" ${x}></div>`;
+  const opt=["cpf","procedencia","residencia","parceria","contatoEmerg","encaminhamento","obs"].some(k=>p[k]);
   page.innerHTML=`<div class="row between" style="margin-bottom:16px"><h2>${n?"Novo paciente":"Editar paciente"}</h2></div>
-   <div class="card"><h3>Identificação</h3><div class="grid">${f("nome","Nome completo")}${f("nascimento","Data de nascimento","","date")}${f("sus","Cartão SUS")}${f("telefone","Telefone")}</div></div>
-   <div class="card"><h3>Origem</h3><div class="grid">${f("procedencia","Procedência")}${f("residencia","Residência")}${f("parceria","Parceria / estado civil")}${f("encaminhamento","Motivo do encaminhamento")}</div></div>
+   <div class="card"><h3>${ic("user")} Dados essenciais</h3><div class="grid">
+     ${f("nome","Nome completo *")}${f("nascimento","Data de nascimento","","date")}${f("sus","Cartão SUS","inputmode=\"numeric\" placeholder=\"15 dígitos\"")}${f("telefone","Telefone / WhatsApp","inputmode=\"tel\" placeholder=\"(79) 99999-9999\"")}</div>
+     <p class="hint" id="idadeAuto" style="margin:8px 0 0"></p></div>
+   <details class="card" ${opt?"open":""}><summary style="cursor:pointer;font-weight:600">Mais dados <span class="mut" style="font-weight:400">(opcional)</span></summary>
+     <div class="grid">${f("cpf","CPF","inputmode=\"numeric\"")}${f("procedencia","Procedência (unidade ou município)")}${f("residencia","Residência (bairro)")}${f("parceria","Parceria / estado civil")}
+     ${f("contatoEmerg","Contato de emergência (nome e telefone)")}${f("encaminhamento","Motivo do encaminhamento")}</div>
+     <label>Observações</label><textarea id="f_obs">${esc(p.obs||"")}</textarea></details>
    <div class="row"><button class="btn" id="ok">${lab("save","Salvar paciente")}</button><button class="btn sec" id="cancel">Cancelar</button></div>`;
+  const idadeAuto=()=>{ const v=$("#f_nascimento").value; $("#idadeAuto").textContent=v?`Idade: ${idadeDe({nascimento:v})} anos`:""; };
+  $("#f_nascimento").oninput=idadeAuto; idadeAuto(); $("#f_nome").focus();
   $("#cancel").onclick=()=>n?nav("pacientes"):telaPaciente(p.id);
   $("#ok").onclick=async()=>{
-    const q={...p}; ["nome","sus","procedencia","residencia","parceria","telefone","encaminhamento"].forEach(k=>q[k]=$("#f_"+k).value.trim().toUpperCase());
+    const q={...p}; ["nome","sus","cpf","procedencia","residencia","parceria","telefone","contatoEmerg","encaminhamento","obs"].forEach(k=>q[k]=$("#f_"+k).value.trim().toUpperCase());
     q.nascimento=$("#f_nascimento").value; if(!q.nome) return toast("Informe o nome.");
+    q.sus=q.sus.replace(/\D/g,""); q.cpf=q.cpf.replace(/\D/g,"");
+    if(q.sus&&q.sus.length!==15&&!confirm(`O Cartão SUS tem ${q.sus.length} dígitos (o esperado são 15). Salvar assim mesmo?`)) return;
+    if(q.cpf&&q.cpf.length!==11&&!confirm(`O CPF tem ${q.cpf.length} dígitos (o esperado são 11). Salvar assim mesmo?`)) return;
+    const nn=s=>s.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/\s+/g," ").trim();
+    const dup=idx.pacientes.find(x=>x.id!==q.id&&((q.sus&&x.sus===q.sus)||nn(x.nome)===nn(q.nome)));
+    if(dup&&!confirm(`Já existe um paciente parecido: ${dup.nome}${dup.sus?" (SUS "+dup.sus+")":""}. Salvar mesmo assim?`)) return;
     q.id||=uid(); q.consultas||=[]; $("#ok").disabled=true;
     try{ await gravarPaciente(q); toast("Paciente salvo."); telaPaciente(q.id); }catch(e){ toast("Erro: "+e.message); $("#ok").disabled=false; }
   };
@@ -554,6 +569,7 @@ async function telaPaciente(id){
   const e=idx.pacientes.find(x=>x.id===id), cs=ordenadas(p), r=resumoClinico(p), idade=idadeDe(p);
   const alerg=r.alergias&&!/^nega/i.test(r.alergias);
   const tagsC=r.comorb&&!/^nega$/i.test(r.comorb)?r.comorb.split(/\s*,\s*/).filter(x=>x&&!/^nega$/i.test(x)).map(x=>`<span class="tag warn">${esc(x)}</span>`).join(""):"";
+  const tel=(p.telefone||"").replace(/\D/g,""), zap=tel.length>=10?`<a class="tag" target="_blank" rel="noopener" style="text-decoration:none" href="https://wa.me/${tel.length<=11?"55"+tel:tel}">WhatsApp ${esc(p.telefone)}</a>`:(p.telefone?`<span class="tag">${esc(p.telefone)}</span>`:"");
   const pn=[...cs].reverse().find(c=>c.tipo==="prenatal"&&c.v.DUM); let gest="";
   if(pn){ const d=diasEntre(pn.v.DUM,hoje()); if(d>=0&&d<=300){
     gest=`<span class="tag pri" style="background:rgba(255,255,255,.2);color:#fff">Gestante · IG hoje ${fmtIG(d)} · DPP ${fmtData(somaDias(pn.v.DUM,280))}</span>`+(pn.v.RISCO==="ALTO RISCO"?`<span class="tag err">Alto risco</span>`:""); } }
@@ -561,7 +577,7 @@ async function telaPaciente(id){
   <div class="banner"><div class="av">${iniciais(p.nome)}</div>
     <div style="flex:1;min-width:220px"><h2>${esc(p.nome)}</h2><div class="sub">${[idade&&idade+" anos",p.sus&&"SUS "+esc(p.sus),p.procedencia,p.residencia].filter(Boolean).join(" · ")}</div>
     ${p.encaminhamento?`<div class="sub">Encaminhamento: ${esc(p.encaminhamento)}</div>`:""}
-    <div class="row" style="margin-top:8px;gap:6px">${gest}${alerg?`<span class="tag err">${ic("alert")} Alergia: ${esc(r.alergias)}</span>`:""}${tagsC}</div></div>
+    <div class="row" style="margin-top:8px;gap:6px">${gest}${zap}${alerg?`<span class="tag err">${ic("alert")} Alergia: ${esc(r.alergias)}</span>`:""}${tagsC}</div></div>
     <div class="row"><button class="btn sec sm" id="edP">${lab("edit","Editar")}</button><button class="btn sec sm" id="imp">${lab("print","Imprimir tudo")}</button>
     ${e?.docId?`<a class="btn sec sm" target="_blank" rel="noopener" href="https://docs.google.com/document/d/${e.docId}/edit">${lab("ext","Drive")}</a>`:""}</div></div>
   <div class="cols"><div>
@@ -579,7 +595,9 @@ async function telaPaciente(id){
     <div class="card"><h3>Resumo clínico</h3>
       <div class="kv"><b>Alergias</b>${esc(r.alergias||"—")}</div><div class="kv"><b>Comorbidades</b>${esc(r.comorb||"—")}</div>
       <div class="kv"><b>Medicamentos</b>${esc(r.meds||"—")}</div><div class="kv"><b>Último diagnóstico</b><span style="white-space:pre-wrap">${esc(r.hd||"—")}</span></div>
-      <div class="kv"><b>Última conduta</b><span style="white-space:pre-wrap">${esc(r.cd||"—")}</span></div></div>
+      <div class="kv"><b>Última conduta</b><span style="white-space:pre-wrap">${esc(r.cd||"—")}</span></div>
+      ${p.contatoEmerg?`<div class="kv"><b>Contato de emergência</b>${esc(p.contatoEmerg)}</div>`:""}
+      ${p.obs?`<div class="kv"><b>Observações</b><span style="white-space:pre-wrap">${esc(p.obs)}</span></div>`:""}</div>
     <button class="btn danger sm" id="delP">${lab("trash","Excluir paciente")}</button>
   </div></div>`;
   $("#voltar").onclick=()=>nav("pacientes"); $("#edP").onclick=()=>formPaciente(p); $("#imp").onclick=()=>imprimir(prontuarioHTML(p));
