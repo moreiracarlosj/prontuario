@@ -98,7 +98,18 @@ async function telaModelos(){
 
 /* ---------- imagem ---------- */
 function carregarImg(src){ return new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=src; }); }
+async function pdfParaCanvas(file){
+  if(!window.pdfjsLib){
+    await new Promise((res,rej)=>{ const sc=document.createElement("script"); sc.src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"; sc.onload=res; sc.onerror=()=>rej(new Error("Leitor de PDF indisponível")); document.head.appendChild(sc); });
+    pdfjsLib.GlobalWorkerOptions.workerSrc=URL.createObjectURL(new Blob(['importScripts("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js");'],{type:"text/javascript"}));
+  }
+  const doc=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise, pg=await doc.getPage(1), vp0=pg.getViewport({scale:1}), vp=pg.getViewport({scale:1500/vp0.width});
+  const c=document.createElement("canvas"); c.width=Math.round(vp.width); c.height=Math.round(vp.height);
+  const x=c.getContext("2d"); x.fillStyle="#fff"; x.fillRect(0,0,c.width,c.height);
+  await pg.render({canvasContext:x,viewport:vp}).promise; return c;
+}
 async function arquivoParaImg(file){
+  if(file.type==="application/pdf"||/\.pdf$/i.test(file.name||"")) return pdfParaCanvas(file);
   const src=await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); });
   const im=await carregarImg(src), s=Math.min(1,1500/im.width), c=document.createElement("canvas");
   c.width=Math.round(im.width*s); c.height=Math.round(im.height*s); c.getContext("2d").drawImage(im,0,0,c.width,c.height);
@@ -118,6 +129,79 @@ async function melhorarImg(url){
   hi=Math.max(hi,lo+40);
   for(let i=0;i<a.length;i+=4){ const v=Math.max(0,Math.min(255,(a[i]-lo)*255/(hi-lo))); a[i]=a[i+1]=a[i+2]=v; }
   x.putImageData(d,0,0); return c;
+}
+
+/* ---------- endireitar (4 cantos) e limpar ---------- */
+function homografia(q){
+  const [p0,p1,p2,p3]=q, dx1=p1.x-p2.x, dx2=p3.x-p2.x, dx3=p0.x-p1.x+p2.x-p3.x, dy1=p1.y-p2.y, dy2=p3.y-p2.y, dy3=p0.y-p1.y+p2.y-p3.y;
+  const den=dx1*dy2-dx2*dy1; let g=0,h=0;
+  if(Math.abs(dx3)>1e-9||Math.abs(dy3)>1e-9){ g=(dx3*dy2-dx2*dy3)/den; h=(dx1*dy3-dx3*dy1)/den; }
+  return {a:p1.x-p0.x+g*p1.x, b:p3.x-p0.x+h*p3.x, c:p0.x, d:p1.y-p0.y+g*p1.y, e:p3.y-p0.y+h*p3.y, f:p0.y, g, h};
+}
+function endireitarImg(im,q,ow,oh){
+  const sc=document.createElement("canvas"); sc.width=im.width; sc.height=im.height; const sx=sc.getContext("2d"); sx.drawImage(im,0,0);
+  const sd=sx.getImageData(0,0,sc.width,sc.height).data, sw=sc.width, sh=sc.height, H=homografia(q);
+  const out=document.createElement("canvas"); out.width=ow; out.height=oh; const ox=out.getContext("2d"), od=ox.createImageData(ow,oh), d=od.data;
+  for(let y=0;y<oh;y++) for(let x=0;x<ow;x++){
+    const u=(x+.5)/ow, v=(y+.5)/oh, k=H.g*u+H.h*v+1;
+    let X=(H.a*u+H.b*v+H.c)/k-.5, Y=(H.d*u+H.e*v+H.f)/k-.5;
+    X=Math.max(0,Math.min(sw-1.001,X)); Y=Math.max(0,Math.min(sh-1.001,Y));
+    const x0=X|0, y0=Y|0, fx=X-x0, fy=Y-y0, i00=(y0*sw+x0)*4, i10=i00+4, i01=i00+sw*4, i11=i01+4, o=(y*ow+x)*4;
+    for(let ch=0;ch<3;ch++) d[o+ch]=(sd[i00+ch]*(1-fx)+sd[i10+ch]*fx)*(1-fy)+(sd[i01+ch]*(1-fx)+sd[i11+ch]*fx)*fy;
+    d[o+3]=255;
+  }
+  ox.putImageData(od,0,0); return out;
+}
+function limparFundo(c,cor){
+  const w=c.width, h=c.height, x=c.getContext("2d"), img=x.getImageData(0,0,w,h), d=img.data;
+  const sw=Math.max(8,Math.round(w/14)), sh=Math.max(8,Math.round(h/14)), sm=document.createElement("canvas"); sm.width=sw; sm.height=sh;
+  const sx=sm.getContext("2d"); sx.imageSmoothingQuality="high"; sx.drawImage(c,0,0,sw,sh);
+  const s=sx.getImageData(0,0,sw,sh); let a=s.data;
+  for(let pass=0;pass<8;pass++){ const b=new Uint8ClampedArray(a);
+    for(let y=0;y<sh;y++) for(let xx=0;xx<sw;xx++) for(let ch=0;ch<3;ch++){ let m=0;
+      for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){ const yy=Math.min(sh-1,Math.max(0,y+dy)), xq=Math.min(sw-1,Math.max(0,xx+dx)); const v=a[(yy*sw+xq)*4+ch]; if(v>m) m=v; }
+      b[(y*sw+xx)*4+ch]=m; }
+    a=b; }
+  s.data.set(a); sx.putImageData(s,0,0);
+  const bg=document.createElement("canvas"); bg.width=w; bg.height=h; const bx=bg.getContext("2d"); bx.imageSmoothingQuality="high"; bx.drawImage(sm,0,0,w,h);
+  const bd=bx.getImageData(0,0,w,h).data;
+  for(let i=0;i<d.length;i+=4){
+    let r=Math.min(255,d[i]/Math.max(bd[i],1)*255), g=Math.min(255,d[i+1]/Math.max(bd[i+1],1)*255), b=Math.min(255,d[i+2]/Math.max(bd[i+2],1)*255);
+    if(cor){ const f=v=>255*Math.pow(Math.max(0,Math.min(1,(v-90)/150)),2); r=f(r); g=f(g); b=f(b); }
+    else { const v=255*Math.pow(Math.max(0,Math.min(1,((r*.3+g*.59+b*.11)-100)/135)),2); r=g=b=v; }
+    d[i]=r; d[i+1]=g; d[i+2]=b;
+  }
+  x.putImageData(img,0,0); return c;
+}
+function abrirEndireitar(url,stage,pronto,cancelar){
+  carregarImg(url).then(im=>{
+    const W=im.width, H=im.height, ins=.06;
+    const q=[{x:ins,y:ins},{x:1-ins,y:ins},{x:1-ins,y:1-ins},{x:ins,y:1-ins}];
+    stage.innerHTML=`<div style="max-width:640px;margin:0 auto"><p class="hint" style="margin:0 0 8px">Arraste as 4 bolinhas até os cantos da folha. Depois clique em Aplicar.</p>
+      <div id="ej" style="position:relative;touch-action:none"><img src="${url}" style="width:100%;display:block;border-radius:6px" alt="">
+      <svg viewBox="0 0 1 1" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none"><polygon id="epl" fill="rgba(14,124,134,.18)" stroke="#0e7c86" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>
+      ${q.map((_,i)=>`<div class="eh" data-i="${i}" style="position:absolute;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;background:rgba(14,124,134,.9);border:3px solid #fff;cursor:grab;box-shadow:0 1px 4px rgba(0,0,0,.4);touch-action:none"></div>`).join("")}</div>
+      <div class="row" style="margin-top:12px"><label style="margin:0;text-transform:none;font-size:13px"><input type="checkbox" id="e1" checked style="width:auto"> Limpar sombras e fundo</label>
+      <label style="margin:0;text-transform:none;font-size:13px"><input type="checkbox" id="e2" style="width:auto"> Manter cores (logomarca)</label>
+      <label style="margin:0;text-transform:none;font-size:13px"><input type="checkbox" id="e3" checked style="width:auto"> Formato A4</label></div>
+      <div class="row" style="margin-top:12px"><button class="btn" id="eok">Aplicar</button><button class="btn sec" id="ecn">Cancelar</button></div></div>`;
+    const box=$("#ej"), hs=$$(".eh",stage), pl=$("#epl");
+    const pos=()=>{ hs.forEach((h,i)=>{ h.style.left=q[i].x*100+"%"; h.style.top=q[i].y*100+"%"; }); pl.setAttribute("points",q.map(p=>p.x+","+p.y).join(" ")); }; pos();
+    hs.forEach(h=>h.addEventListener("pointerdown",e=>{ e.preventDefault(); const i=+h.dataset.i, rect=box.getBoundingClientRect(); h.setPointerCapture(e.pointerId);
+      const mv=ev=>{ q[i].x=Math.max(0,Math.min(1,(ev.clientX-rect.left)/rect.width)); q[i].y=Math.max(0,Math.min(1,(ev.clientY-rect.top)/rect.height)); pos(); };
+      const up=()=>{ h.removeEventListener("pointermove",mv); h.removeEventListener("pointerup",up); };
+      h.addEventListener("pointermove",mv); h.addEventListener("pointerup",up); }));
+    $("#ecn").onclick=cancelar;
+    $("#eok").onclick=()=>{
+      const b=$("#eok"); b.disabled=true; b.textContent="Processando…";
+      setTimeout(()=>{ try{
+        const P=q.map(p=>({x:p.x*W,y:p.y*H})), dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+        let ow,oh; if($("#e3").checked){ ow=1240; oh=1754; } else { ow=Math.round(Math.max(dist(P[0],P[1]),dist(P[3],P[2]))); oh=Math.round(Math.max(dist(P[0],P[3]),dist(P[1],P[2]))); const sc=Math.min(1,1500/ow); ow=Math.round(ow*sc); oh=Math.round(oh*sc); }
+        let c=endireitarImg(im,P,ow,oh); if($("#e1").checked) c=limparFundo(c,$("#e2").checked);
+        pronto(c);
+      }catch(e){ toast("Erro ao processar: "+e.message); cancelar(); } },30);
+    };
+  });
 }
 
 /* ---------- OCR (opcional) ---------- */
@@ -155,10 +239,11 @@ function editorModelo(orig){
    <div class="edgrid"><div class="stage" id="stage"></div><div>
     <div class="card"><h3>Modelo</h3><label style="margin-top:0">Nome</label><input id="mn" value="${esc(m.nome)}">
       <label>Tipo</label><select id="mt"><option value="exames">Pedido de exames</option><option value="receita">Receita</option><option value="outro">Outro</option></select></div>
-    <div class="card"><h3>Foto do modelo</h3><input type="file" id="mf" accept="image/*" style="display:none">
-      <div class="row"><button class="btn sec sm" id="bf">${lab("plus",m.img?"Trocar foto":"Escolher foto")}</button>
+    <div class="card"><h3>Foto do modelo</h3><input type="file" id="mf" accept="image/*,application/pdf" style="display:none">
+      <div class="row"><button class="btn sec sm" id="bf">${lab("plus",m.img?"Trocar arquivo":"Escolher foto ou PDF")}</button>
       <button class="btn sec sm" id="b90" title="Girar à esquerda">↺</button><button class="btn sec sm" id="b270" title="Girar à direita">↻</button>
-      <button class="btn sec sm" id="bm">Melhorar</button></div>
+      <button class="btn sec sm" id="bm">Contraste</button><button class="btn sec sm" id="bu">Desfazer</button></div>
+      <div class="row" style="margin-top:8px"><button class="btn sm" id="be">${lab("edit","Endireitar e limpar")}</button></div>
       <div class="row" style="margin-top:8px"><button class="btn sec sm" id="bq">${lab("plus","Enviar do celular (QR code)")}</button></div>
       <div id="qrbox"></div>
       <div class="row" style="margin-top:8px"><button class="btn sm" id="bo">Sugerir campos automaticamente</button></div>
@@ -189,12 +274,14 @@ function editorModelo(orig){
     window.addEventListener("pointermove",mv); window.addEventListener("pointerup",up);
   });
   $$("[data-add]").forEach(b=>b.onclick=()=>{ const k=b.dataset.add, d=FDEF[k]; const f={id:uid(),tipo:k,x:10,y:10,w:d.w,h:d.h,fs:d.fs}; m.campos.push(f); draw(); select(f.id); });
-  const setImg=async c=>{ m.img=canvasParaUrl(c); m.ratio=+(c.height/c.width).toFixed(4); draw(); $("#bf").lastChild.textContent="Trocar foto"; };
+  const hist=[]; const setImg=async c=>{ if(m.img) hist.push(m.img); m.img=canvasParaUrl(c); m.ratio=+(c.height/c.width).toFixed(4); draw(); $("#bf").lastChild.textContent="Trocar arquivo"; };
   $("#bf").onclick=()=>$("#mf").click();
   $("#mf").onchange=async e=>{ if(e.target.files[0]){ try{ await setImg(await arquivoParaImg(e.target.files[0])); }catch(x){ toast("Não consegui abrir a imagem."); } } };
   const need=()=>{ if(!m.img){ toast("Escolha uma foto primeiro."); return false; } return true; };
   $("#b90").onclick=async()=>need()&&setImg(await girarImg(m.img,-90)); $("#b270").onclick=async()=>need()&&setImg(await girarImg(m.img,90));
   $("#bm").onclick=async()=>need()&&setImg(await melhorarImg(m.img));
+  $("#be").onclick=()=>{ if(!need()) return; abrirEndireitar(m.img,stage,async c=>{ await setImg(c); props(); toast("Folha endireitada. Se ficou ruim, use Desfazer."); },()=>{ draw(); props(); }); };
+  $("#bu").onclick=()=>{ if(!hist.length) return toast("Nada para desfazer."); const u=hist.pop(); m.img=u; carregarImg(u).then(i=>{ m.ratio=+(i.height/i.width).toFixed(4); draw(); }); };
   $("#bq").onclick=()=>receberDoCelular($("#qrbox"),async blob=>{ await setImg(await arquivoParaImg(blob)); toast("Foto recebida do celular."); });
   $("#bo").onclick=async()=>{ if(!need()) return; const b=$("#bo"); b.disabled=true; b.textContent="Lendo a imagem…";
     try{ const n=await ocrSugerir(m); toast(n?`${n} campo(s) sugerido(s). Ajuste se precisar.`:"Não encontrei rótulos conhecidos. Adicione os campos manualmente."); draw(); props(); }
@@ -260,10 +347,10 @@ function carregarQR(){
   if(window.QRCode) return Promise.resolve();
   return new Promise((res,rej)=>{ const s=document.createElement("script"); s.src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"; s.onload=res; s.onerror=()=>rej(new Error("QR indisponível")); document.head.appendChild(s); });
 }
-async function achaFoto(nome){
-  const q=`name='${nome}' and '${store.rootId}' in parents and trashed=false`;
-  const l=await (await store.api("https://www.googleapis.com/drive/v3/files?q="+encodeURIComponent(q)+"&fields=files(id)")).json();
-  return l.files[0]?.id||null;
+async function achaFoto(prefixo){
+  const q=`name contains '${prefixo}' and '${store.rootId}' in parents and trashed=false`;
+  const l=await (await store.api("https://www.googleapis.com/drive/v3/files?q="+encodeURIComponent(q)+"&fields=files(id,name)")).json();
+  return l.files[0]||null;
 }
 async function receberDoCelular(box,aoReceber){
   if(store!==DriveStore) return toast("O envio pelo celular precisa do login com Google (não funciona no modo demonstração).");
@@ -281,9 +368,10 @@ async function receberDoCelular(box,aoReceber){
   qrTimer=setInterval(async()=>{
     if(!document.body.contains(box)||!$("#qrst")||Date.now()>ate){ pararQR(); return; }
     try{
-      const fid=await achaFoto(nome); if(!fid) return;
-      pararQR(); $("#qrst").textContent="Foto recebida. Processando…";
-      const blob=await (await store.api(`https://www.googleapis.com/drive/v3/files/${fid}?alt=media`)).blob();
+      const fa=await achaFoto(`foto-${id}`); if(!fa) return; const fid=fa.id;
+      pararQR(); $("#qrst").textContent="Arquivo recebido. Processando…";
+      let blob=await (await store.api(`https://www.googleapis.com/drive/v3/files/${fid}?alt=media`)).blob();
+      if(/\.pdf$/i.test(fa.name)) blob=new File([blob],fa.name,{type:"application/pdf"});
       await aoReceber(blob); box.innerHTML="";
       store.api(`https://www.googleapis.com/drive/v3/files/${fid}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({trashed:true})}).catch(()=>{});
     }catch(e){ if($("#qrst")) $("#qrst").textContent="Erro: "+e.message; }
@@ -303,7 +391,7 @@ async function receberDoCelular(box,aoReceber){
     <div id="cel2" style="display:none;flex-direction:column;gap:10px;align-items:stretch;width:260px">
       <button class="btn" id="cel3" style="padding:14px;font-size:16px">${ic("plus")} Tirar foto</button>
       <button class="btn sec" id="cel4">Escolher da galeria</button>
-      <input type="file" id="cf1" accept="image/*" capture="environment" style="display:none"><input type="file" id="cf2" accept="image/*" style="display:none"></div>
+      <input type="file" id="cf1" accept="image/*" capture="environment" style="display:none"><input type="file" id="cf2" accept="image/*,application/pdf" style="display:none"></div>
     <p class="hint" id="cel5" style="min-height:20px"></p>`;
   document.body.appendChild(el);
   const msg=t=>{ $("#cel5").textContent=t; };
@@ -317,9 +405,10 @@ async function receberDoCelular(box,aoReceber){
   const enviar=async e=>{
     const f=e.target.files[0]; if(!f) return; msg("Enviando…");
     try{
-      const c=await arquivoParaImg(f), blob=await new Promise(r=>c.toBlob(r,"image/jpeg",.82));
-      const b="x"+uid(), meta={name:`foto-${id}.jpg`,parents:[store.rootId]};
-      const pre=`--${b}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n--${b}\r\nContent-Type: image/jpeg\r\n\r\n`;
+      const pdf=f.type==="application/pdf"||/\.pdf$/i.test(f.name);
+      const blob=pdf?f:await new Promise(async r=>(await arquivoParaImg(f)).toBlob(r,"image/jpeg",.82));
+      const b="x"+uid(), meta={name:`foto-${id}.${pdf?"pdf":"jpg"}`,parents:[store.rootId]};
+      const pre=`--${b}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n--${b}\r\nContent-Type: ${pdf?"application/pdf":"image/jpeg"}\r\n\r\n`;
       await store.api("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id",
         {method:"POST",headers:{"Content-Type":"multipart/related; boundary="+b},body:new Blob([pre,blob,`\r\n--${b}--`])});
       msg("Foto enviada! Pode voltar ao computador. Para enviar outra, toque em Tirar foto.");
